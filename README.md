@@ -2,7 +2,7 @@
 
 A private-by-default bilingual web reader for local books. The interface supports 中文 and English and defaults to Chinese. Import DRM-free EPUB, PDF, or TXT files and read them without uploading book content to a server.
 
-Production: https://FIERsity.github.io/WebReader/
+Production: https://perhydrol.github.io/WebReader/
 
 ## Current Features
 
@@ -50,7 +50,7 @@ The current paper tool is fully local and deterministic. It uses PDF.js text ite
 
 ## Deployment
 
-Pushes to `main` run checks and publish `dist/` through GitHub Actions to GitHub Pages. GitHub Actions is used only for CI/CD; the application has no server process.
+Pushes to `main` run unit tests, lint, type-check, and the production build, then publish `dist/` through GitHub Actions to GitHub Pages. Browser E2E tests are not run in GitHub Actions; use `pnpm run test:e2e` locally. GitHub Actions is used only for CI/CD; the application has no server process.
 
 The production build uses relative paths so application chunks, PDF workers, the manifest, and the service worker resolve correctly beneath `/WebReader/`.
 

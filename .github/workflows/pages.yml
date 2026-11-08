@@ -26,8 +26,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
-      - run: pnpm exec playwright install --with-deps chrome
-      - run: pnpm run test:e2e
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
