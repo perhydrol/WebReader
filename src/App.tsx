@@ -10,6 +10,7 @@ import { ShelfButton } from "./components/ShelfButton";
 import { LibraryView } from "./components/LibraryView";
 import { ReaderSheet } from "./components/ReaderSheet";
 import { ReaderToolbar } from "./components/ReaderToolbar";
+import { useOptionalFont } from "./hooks/useOptionalFont";
 import { useReaderChrome } from "./hooks/useReaderChrome";
 import { ReaderOutline } from "./components/ReaderOutline";
 import { ReaderSearch } from "./components/ReaderSearch";
@@ -210,8 +211,10 @@ export default function App() {
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
+  const optionalFontState = useOptionalFont();
   const readerPreferences = useMemo<ReaderPreferences>(() => ({ ...preferences,
-    theme: preferences.followSystemTheme !== false ? systemDark ? "night" : "white" : preferences.theme }), [preferences, systemDark]);
+    fontFamily: preferences.fontFamily === "wenkai" && optionalFontState !== "ready" ? "serif" : preferences.fontFamily,
+    theme: preferences.followSystemTheme !== false ? systemDark ? "night" : "white" : preferences.theme }), [preferences, systemDark, optionalFontState]);
 
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -623,6 +626,7 @@ export default function App() {
           {readerPanel === "settings" && (
             <ReaderSheet label={t("readerSettings")} onClose={() => setReaderPanel(undefined)}>
             <ReaderSettings
+              optionalFontReady={optionalFontState === "ready"}
               readingModeControl={capabilities.readingProfile && (
               <Segmented strong className="reading-mode-switch" role="group" aria-label={t("readingMode")}>
                 <SegmentedButton
@@ -656,7 +660,7 @@ export default function App() {
   }
 
   return (
-    <LibraryView books={books} language={language} languageControl={languageControl} busy={busy}
+    <LibraryView optionalFontState={optionalFontState} books={books} language={language} languageControl={languageControl} busy={busy}
       dragging={dragging} setDragging={setDragging} fileInputRef={fileInputRef} importFiles={importFiles}
       openBook={openBook} setDeleteTarget={setDeleteTarget} setFeedbackOpen={setFeedbackOpen}
       message={message} setMessage={setMessage} updateAction={updateAction} t={t}>

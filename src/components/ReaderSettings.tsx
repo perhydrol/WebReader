@@ -5,6 +5,7 @@ import type { ReaderPreferences } from "../types/library";
 import type { ReactNode } from "react";
 
 interface ReaderSettingsProps {
+  optionalFontReady: boolean;
   readingModeControl?: ReactNode;
   language: Language;
   preferences: ReaderPreferences;
@@ -38,7 +39,7 @@ const widths: Array<{ value: ReaderPreferences["contentWidth"]; label: Translati
   { value: "wide", label: "wide" },
 ];
 
-export function ReaderSettings({ language, preferences, onLanguageChange, onChange, onClose, typography, publisherFont, t, readingModeControl }: ReaderSettingsProps) {
+export function ReaderSettings({ optionalFontReady, language, preferences, onLanguageChange, onChange, onClose, typography, publisherFont, t, readingModeControl }: ReaderSettingsProps) {
   const visibleFontOptions = publisherFont ? fontOptions : fontOptions.filter((option) => option.value !== "publisher");
   const selectedFont = publisherFont || preferences.fontFamily !== "publisher" ? preferences.fontFamily : "serif";
   const update = <Key extends keyof ReaderPreferences>(key: Key, value: ReaderPreferences[Key]) => {
@@ -78,6 +79,7 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
           <label className="setting-group">
             <span className="setting-label">{t("fontFamily")}</span>
             <select value={selectedFont} onChange={(event) => update("fontFamily", event.target.value as ReaderPreferences["fontFamily"])}>
+              {optionalFontReady && <option value="wenkai">{t("wenkaiFont")}</option>}
               {visibleFontOptions.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}
             </select>
           </label>

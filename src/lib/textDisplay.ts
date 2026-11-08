@@ -1,6 +1,7 @@
 import type { ReaderPreferences, ReaderTheme } from "../types/library";
 
 export const TEXT_FONT_STACK = {
+  wenkai: '"WebReader WenKai", "Songti SC", serif',
   publisher: 'Georgia, "Songti SC", "Noto Serif CJK SC", serif',
   serif: 'Georgia, "Songti SC", "Noto Serif CJK SC", serif',
   sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif',

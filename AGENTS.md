@@ -84,7 +84,7 @@ File import, IndexedDB migration, PWA, EPUB/PDF rendering, worker URL, CSP, page
 
 `main` is built and published by GitHub Actions to GitHub Pages. The public URL is `https://perhydrol.github.io/WebReader/`. GitHub Actions runs `pnpm run check` only; browser E2E is a local validation command. Vite uses relative asset paths so workers, manifest, icons, and application chunks resolve beneath the Pages repository path.
 
-The service worker caches only the application shell. User book data belongs in IndexedDB and must never be copied into Cache Storage, a Pages artifact, Actions artifact, log, or repository file.
+The service worker caches only the application shell. Explicit optional-font downloads use a separate application-managed Cache Storage cache containing only verified public font bytes; see [font resource ownership](src/lib/optionalFont.md). User book data belongs in IndexedDB and must never be copied into Cache Storage, a Pages artifact, Actions artifact, log, or repository file.
 
 <!-- AGENT-MAINTAINED:END project-facts -->
 

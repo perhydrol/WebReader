@@ -2,6 +2,16 @@ export type Language = "zh" | "en";
 export type TranslationVariables = Record<string, string | number>;
 
 const zh = {
+  extraFonts: "额外字体",
+  wenkaiFont: "霞鹜文楷 Regular",
+  fontDownloadNote: "约 7.7 MiB，点击后下载并保存在此浏览器，供离线阅读使用。下载后可在阅读设置中选择。",
+  downloadFont: "下载字体",
+  fontDownloading: "正在下载…",
+  fontChecking: "正在检查…",
+  fontDownloadedAction: "已下载",
+  fontDownloaded: "已下载，可在阅读设置中选择。",
+  fontDownloadFailed: "字体下载失败或无法保存，请检查网络和浏览器存储后重试。",
+  fontLicense: "字体许可 · SIL OFL 1.1",
   systemTheme: "跟随系统",
   appSettings: "应用设置",
   continueReading: "继续阅读",
@@ -154,6 +164,16 @@ const zh = {
 } as const;
 
 const en: Record<keyof typeof zh, string> = {
+  extraFonts: "Additional fonts",
+  wenkaiFont: "LXGW WenKai Regular",
+  fontDownloadNote: "About 7.7 MiB. Downloads only when requested and stays in this browser for offline reading. Select it in reading settings after downloading.",
+  downloadFont: "Download font",
+  fontDownloading: "Downloading…",
+  fontChecking: "Checking…",
+  fontDownloadedAction: "Downloaded",
+  fontDownloaded: "Downloaded. Available in reading settings.",
+  fontDownloadFailed: "Could not download or save the font. Check your connection and browser storage, then retry.",
+  fontLicense: "Font license · SIL OFL 1.1",
   systemTheme: "System appearance",
   appSettings: "App settings",
   continueReading: "Continue reading",

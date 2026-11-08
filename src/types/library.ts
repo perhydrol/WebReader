@@ -2,7 +2,7 @@ export type BookFormat = "epub" | "pdf" | "txt";
 export type ReadingProfile = "book" | "article";
 
 export type ReaderTheme = "white" | "paper" | "night" | "contrast";
-export type ReaderFontFamily = "publisher" | "serif" | "sans";
+export type ReaderFontFamily = "publisher" | "serif" | "sans" | "wenkai";
 export type ReaderContentWidth = "narrow" | "standard" | "wide";
 
 export interface ReadingLocator {

@@ -34,3 +34,5 @@ Legacy rules live in the base layer so Konsta utilities can apply their publishe
 Neutral shelf actions opt into ShelfButton, which uses public Konsta colors and rounded props. No broad .k-button appearance override applies to segmented controls. This stylesheet retains local layout, neutral notice colors, night reader icon foregrounds and destructive-action red.
 
 Settings keep their title and close action above the mode control, within one scroll owner. Search uses three bounded columns for field, clear and submit. Shelf notices, language selections and reader selection rings use neutral colors. Continue-reading headings retain separation from their action; book metadata shares one centered column.
+
+The optional-font card uses a local grid, neutral shelf action and existing spinner; reduced-motion disables rotation. Native control palettes remain unchanged.

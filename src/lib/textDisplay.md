@@ -8,3 +8,5 @@
 - `textTypographyStyle` converts preferences into the inline style used by scroll fragments.
 
 Change a preference or theme color here rather than duplicating it in the reader components.
+
+WenKai uses the session-loaded WebReader WenKai family with local serif fallback; the host FontFace is owned by [optionalFont](optionalFont.md).

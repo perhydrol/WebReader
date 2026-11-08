@@ -443,6 +443,12 @@ h2 { margin: 0; font-size: 20px; }
 
 .dialog { position: relative; top: auto; left: auto; translate: none; overflow-y: auto; width: min(420px, 100%); max-height: 100%; padding: 0; }
 .app-settings { grid-column: 2; min-width: 0; padding: var(--safe-area-top) var(--safe-area-right) var(--safe-area-bottom) 0; }
+.optional-font-card { display: grid; gap: 12px; }
+.optional-font-card p { margin: 0; }
+.optional-font-card [role="status"]:empty { display: none; }
+.optional-font-card a, .optional-font-note { font-size: 0.875rem; }
+.optional-font-card a { color: inherit; text-decoration: underline; width: fit-content; }
+@media (prefers-reduced-motion: reduce) { .optional-font-card .spin { animation: none; } }
 .library-navbar { margin-bottom: 20px; }
 .library-shell .book-grid .book-card { margin: 0; }
 .library-shell .drop-zone { white-space: normal; height: auto; min-height: 96px; }

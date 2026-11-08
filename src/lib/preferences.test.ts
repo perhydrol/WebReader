@@ -3,6 +3,9 @@ import { DEFAULT_PREFERENCES } from "../types/library";
 import { normalizePreferences } from "./preferences";
 
 describe("reader preference migration", () => {
+  it("preserves the optional downloaded font selection", () => {
+    expect(normalizePreferences({ fontFamily: "wenkai" }).fontFamily).toBe("wenkai");
+  });
   it("returns current defaults for missing data", () => {
     expect(normalizePreferences(undefined)).toEqual(DEFAULT_PREFERENCES);
   });

@@ -5,3 +5,5 @@ Receives local book records and operations from App. It never parses files or op
 The shelf follows system appearance. Its actions use the user-approved neutral glass palette: deep gray with pale labels in dark appearance. Destructive confirmation retains red. Book-opening surfaces stay transparent so the treatment does not cover publication cards.
 
 Continue-reading headings are separated from their action; book metadata is centered within its source-independent information column. Neutral notices retain a compact dismiss target.
+
+Passes the application-owned optional-font state into application settings without starting downloads.

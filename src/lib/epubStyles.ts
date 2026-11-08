@@ -1,3 +1,4 @@
+import { optionalFontStyles } from "./optionalFont";
 import type { ReaderPreferences, ReaderTheme } from "../types/library";
 
 export interface EpubThemeColors {
@@ -60,6 +61,7 @@ export const EPUB_THEME_COLORS: Record<ReaderTheme, EpubThemeColors> = {
 };
 
 const FONT_STACK = {
+  wenkai: '"WebReader WenKai", "Songti SC", serif',
   serif: 'Georgia, "Songti SC", "Noto Serif CJK SC", serif',
   sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif',
 } as const;
@@ -72,6 +74,7 @@ export function buildEpubStyles(preferences: ReaderPreferences): string {
   const indent = `body p:not(li p):not(blockquote p) { text-indent: ${preferences.paragraphIndent}em !important; }`;
 
   return `
+    ${preferences.fontFamily === "wenkai" ? optionalFontStyles() : ""}
     :root {
       --theme-bg-color: ${colors.background};
       --reader-surface-background: ${colors.surfaceBackground};

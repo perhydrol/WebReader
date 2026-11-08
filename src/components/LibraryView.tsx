@@ -5,6 +5,7 @@ import type { BookRecord } from "../types/library";
 import type { Language, TranslationKey, TranslationVariables } from "../lib/i18n";
 import { formatBytes, isLegacyMarkdownRecord } from "../lib/formats";
 import { ShelfButton } from "./ShelfButton";
+import type { OptionalFontState } from "../lib/optionalFont";
 import { AppSettings } from "./AppSettings";
 
 function formatDate(timestamp: number, language: Language): string {
@@ -17,7 +18,8 @@ function formatLabel(format: BookRecord["format"]): string {
 }
 
 
-export function LibraryView({ books, language, languageControl, busy, dragging, setDragging, fileInputRef, importFiles, openBook, setDeleteTarget, setFeedbackOpen, message, setMessage, updateAction, children, t }: {
+export function LibraryView({ optionalFontState, books, language, languageControl, busy, dragging, setDragging, fileInputRef, importFiles, openBook, setDeleteTarget, setFeedbackOpen, message, setMessage, updateAction, children, t }: {
+  optionalFontState: OptionalFontState;
   books: BookRecord[]; language: Language; languageControl: ReactNode; busy: boolean; dragging: boolean;
   setDragging: (value: boolean) => void; fileInputRef: React.RefObject<HTMLInputElement | null>;
   importFiles: (files: File[]) => Promise<void>; openBook: (book: BookRecord) => Promise<void>;
@@ -137,7 +139,7 @@ export function LibraryView({ books, language, languageControl, busy, dragging, 
         )}
       </section>
 
-      {settings && <AppSettings languageControl={languageControl} onClose={() => { setSettings(false); requestAnimationFrame(() => settingsRef.current?.focus({ preventScroll: true })); }} onFeedback={() => setFeedbackOpen(true)} t={t} />}
+      {settings && <AppSettings optionalFontState={optionalFontState} languageControl={languageControl} onClose={() => { setSettings(false); requestAnimationFrame(() => settingsRef.current?.focus({ preventScroll: true })); }} onFeedback={() => setFeedbackOpen(true)} t={t} />}
       {children}
     </main>
   );

@@ -12,3 +12,5 @@
 - The book object exposes only `dir`, `sections`, and `destroy`; the TXT locator remains the source offset, not a CFI.
 
 Failure to create or load a blob URL is left to the paginator's local view failure path; no source text is transmitted or synthesized.
+
+Selected WenKai includes the verified session-blob @font-face for isolated paginator documents; ownership is defined in [optionalFont](optionalFont.md).

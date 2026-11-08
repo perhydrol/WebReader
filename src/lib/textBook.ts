@@ -1,3 +1,4 @@
+import { optionalFontStyles } from "./optionalFont";
 import type { ReaderPreferences } from "../types/library";
 import { TEXT_FONT_STACK, TEXT_THEME_COLORS } from "./textDisplay";
 import type { TextChapter, TextSourceModel } from "./textDocument";
@@ -55,6 +56,7 @@ export function buildTextBookStyles(preferences: ReaderPreferences): string {
   const colors = TEXT_THEME_COLORS[preferences.theme];
   const indent = preferences.paragraphIndent ? `${preferences.paragraphIndent}em` : "0";
   return [
+    preferences.fontFamily === "wenkai" ? optionalFontStyles() : "",
     "html, body { background: transparent; }",
     `body { margin: 0; color: ${colors.color}; font-family: ${TEXT_FONT_STACK[preferences.fontFamily]}; font-size: ${preferences.fontSizePercent}%; line-height: ${preferences.lineHeight}; }`,
     `p.text-fragment-group { margin: 0 0 1em; white-space: pre-wrap; overflow-wrap: anywhere; text-indent: ${indent}; }`,

@@ -15,6 +15,7 @@ Production: https://perhydrol.github.io/WebReader/
 - In-book search across EPUB, PDF, and TXT, with local-only queries, bounded results, source-aware navigation, and active-match highlighting
 - Reader-settings switch between paged and scrolling modes for reflowable EPUB, PDF, and TXT, remembered per document
 - Chinese/English interface with a locally remembered language choice
+- Optional LXGW WenKai Regular download in application settings, with offline caching and selection after download; font provenance and OFL license are in [public/fonts](public/fonts/README.md)
 - Reading controls for text size, local font stacks, line spacing, first-line indent, text width, and four background themes
 - Keyboard navigation for page turns, contents, in-book search (`Ctrl/⌘+F`), text size, and panel dismissal
 - Explicit text-only feedback submission to the developer's feedback server

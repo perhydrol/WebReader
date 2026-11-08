@@ -2,7 +2,7 @@ import type { ReaderPreferences } from "../types/library";
 import { DEFAULT_PREFERENCES } from "../types/library";
 
 const THEMES = new Set(["white", "paper", "night", "contrast"]);
-const FONT_FAMILIES = new Set(["publisher", "serif", "sans"]);
+const FONT_FAMILIES = new Set(["publisher", "serif", "sans", "wenkai"]);
 const CONTENT_WIDTHS = new Set(["narrow", "standard", "wide"]);
 const LINE_HEIGHTS = [1.4, 1.65, 1.9] as const;
 

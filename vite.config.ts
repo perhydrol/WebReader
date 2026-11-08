@@ -28,6 +28,7 @@ export default defineConfig({
       workbox: {
         navigateFallback: "index.html",
         globPatterns: ["**/*.{js,mjs,css,html,svg,woff2}"],
+        globIgnores: ["**/fonts/**"],
         cleanupOutdatedCaches: true,
         runtimeCaching: [],
       },
