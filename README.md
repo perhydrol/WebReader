@@ -1,80 +1,130 @@
 # WebReader
 
-A private-by-default bilingual web reader for local books. The interface supports 中文 and English and defaults to Chinese. Import DRM-free EPUB, PDF, or TXT files and read them without uploading book content to a server.
+在浏览器里阅读自己的书。支持 EPUB、PDF 和 TXT，无需注册，导入的图书与阅读进度保存在当前浏览器中。
 
-Production: https://perhydrol.github.io/WebReader/
+**[开始阅读](https://perhydrol.github.io/WebReader/)**
 
-## Current Features
+A local-first web reader for EPUB, PDF and TXT. Chinese and English UI; Chinese is the default. Books stay in your browser.
 
-- Local library persisted in IndexedDB, with a per-document paged/scroll reading mode
-- EPUB reading with paginated navigation, chapter-continuous scrolling, nested table of contents, and CFI progress
-- PDF rendering with PDF.js, selectable text over the authoritative Canvas, document outlines, page progress, and windowed continuous scrolling
-- Local PDF article reflow for text-layer papers, with deterministic single-column reading order, per-page diagnostics, and a side-by-side proof view
-- Stable source-block mapping between reflowed text and the authoritative PDF Canvas/TextLayer
-- TXT reading with UTF-8/GB18030 fallback, bounded source fragments, virtualized continuous scrolling, chapter-paginated reading, source-relative progress, and local heading outlines
-- In-book search across EPUB, PDF, and TXT, with local-only queries, bounded results, source-aware navigation, and active-match highlighting
-- Reader-settings switch between paged and scrolling modes for reflowable EPUB, PDF, and TXT, remembered per document
-- Chinese/English interface with a locally remembered language choice
-- Optional LXGW WenKai Regular download in application settings, with offline caching and selection after download; font provenance and OFL license are in [public/fonts](public/fonts/README.md)
-- Reading controls for text size, local font stacks, line spacing, first-line indent, text width, and four background themes
-- Keyboard navigation for page turns, contents, in-book search (`Ctrl/⌘+F`), text size, and panel dismissal
-- Explicit text-only feedback submission to the developer's feedback server
-- Duplicate detection, local deletion, a 250 MB per-file safety limit for EPUB/PDF, and an 8 MB limit for TXT
-- Legacy Markdown records from earlier versions stay visible in the local library, are blocked from opening, and can be deleted without touching their stored source
-- Bounded EPUB container preflight that rejects encrypted, malformed, path-unsafe, duplicate, and excessive expanded entries before they reach the library
-- Ordered, coalesced local writes for reading progress and preferences, flushed when leaving a reader or hiding the page
-- Installable PWA application shell, with iOS status-bar underlay configuration and browser colors following the shelf or reading appearance
-- Fully static GitHub Pages deployment
+## 开始使用
 
-Books, extracted content, search queries, search results, reading progress, and preferences remain in the current browser. Search indexes exist only in memory for the open reader and are not written to IndexedDB or Cache Storage. Clearing site data can remove the local library. PWA installation is not a backup. For a text-layer PDF, **Reflowed article** analyzes text locally and reconstructs a continuous single-column reading order without an LLM. **Proof view** places each original PDF page beside the blocks assigned to that page so column order, omissions, headers, footers, equations, and references can be checked against the visual source.
+1. 打开网站，点击上传区域选择文件，或把文件拖入该区域。
+2. 在书架打开图书。之后可从“继续阅读”返回上次的位置。
+3. 在阅读设置中切换翻页或滚动，调整可用的排版与背景选项。
+4. 通过目录跳转章节，或使用书内搜索查找正文。
 
-The original PDF Canvas remains authoritative. Its PDF.js text layer is selectable and maps selections to stable source blocks. Selecting a reflowed block records its source page and region, so returning to the original PDF highlights the corresponding geometry. Review and rejected pages are reported explicitly; scanned PDFs without a usable text layer still require OCR, which WebReader does not currently provide. WebReader does not currently include content translation, provider configuration, or a translation development proxy. Legacy translation tables remain in IndexedDB only so existing browser libraries can be opened and cleaned up without deleting books.
+应用设置可切换中文和 English，语言选择会在本机保留。
 
-## Development
+## 格式与阅读能力
 
-Requires Node.js 24 or newer and the pnpm version pinned in `package.json`. Install pnpm using its [official installation guide](https://pnpm.io/installation).
+| 格式 | 支持的阅读方式 | 边界 |
+| --- | --- | --- |
+| EPUB | 翻页、目录、书内搜索；可重排图书支持章节内滚动与排版调整 | 固定版式保持分页，不提供正文排版调整；不支持 DRM |
+| PDF | 原始页面、连续滚动、可用的文档目录、文本选择和书内搜索 | 扫描图片没有可搜索的文本层；不提供 OCR |
+| TXT | 翻页、连续滚动、自动章节目录、书内搜索与排版调整 | 优先按 UTF-8 解码，失败时回退 GB18030；内容作为纯文本显示 |
 
-```bash
+单文件导入上限：EPUB / PDF 为 250 MB，TXT 为 8 MB。文件还会经过格式检查；更完整的导入契约见 [格式校验](src/lib/formats.md)。
+
+Markdown 不属于支持格式。旧版本遗留的 Markdown 条目仍可在书架删除，但不能打开。WebReader 不提供 DRM 解密、账号、云端书库、设备间同步或内容翻译。
+
+### PDF 文章重排
+
+对于有文本层的 PDF，可尝试本地文章重排，把分析得到的内容排成连续单栏；校对视图可将每页原始预览与提取的文本块并排显示。
+
+重排不会调用模型、改写正文或补全缺失内容。复杂排版可能无法可靠还原，页面诊断会标出需要检查的内容，原始 PDF 页面始终是核对依据。实现与限制见 [PDF 阅读器](src/readers/PdfReader.md)。
+
+## 阅读设置
+
+外观默认跟随系统。手动选择白纸、暖纸、夜间或高对比背景后，可通过“跟随系统”恢复自动切换。
+
+可重排 EPUB 和 TXT 支持字号、字体、行距、首行缩进和正文宽度设置。PDF 与固定版式 EPUB 不提供正文排版控件。翻页或滚动的选择按图书记忆。
+
+TXT 工具栏会在空闲后隐藏，单击正文中间区域可重新显示；键盘也能聚焦“显示阅读工具栏”入口。目录、搜索和阅读设置以浮层打开。
+
+### 额外字体
+
+在“应用设置 → 额外字体”中可以下载 **霞鹜文楷 Regular**。下载过程中显示加载状态；成功保存后，才会出现在阅读设置的字体列表里。
+
+字体由本站按需提供，不随首次应用缓存自动下载。下载后可离线使用；如果浏览器清除了字体缓存，需要重新下载。字体来源、大小、转换方法和许可见 [字体资源说明](public/fonts/README.md)。原书内嵌字体与系统字体不依赖这项下载。
+
+### 键盘操作
+
+输入文字或操作控件时，普通翻页快捷键不会接管输入。
+
+| 按键 | 操作 |
+| --- | --- |
+| `←` / `PageUp` / `Shift + Space` | 上一页 |
+| `→` / `PageDown` / `Space` | 下一页 |
+| `T` | 打开或关闭目录 |
+| `Ctrl + F` / `⌘ + F` | 书内搜索 |
+| `[` / `]` | 减小 / 增大字号，限支持排版的图书 |
+| `Esc` | 关闭阅读面板 |
+
+## 安装、离线与数据保留
+
+可通过支持安装的浏览器将 WebReader 安装为 PWA；在 iPhone 上可从 Safari 的分享菜单添加到主屏幕。
+
+首次访问需要联网加载应用。应用资源缓存完成、图书已导入后，可在同一浏览器的离线环境中阅读。新版本准备好时，书架会出现更新入口，由你选择何时更新。
+
+**浏览器存储不是备份。** 图书与阅读进度不会自动同步到其他浏览器或设备。清除网站数据可能删除书库；安装 PWA 或允许持久存储不能代替保留原始文件。书架中的删除操作只移除浏览器里的副本，不会删除设备上的原文件。
+
+默认开发验收以桌面 Chrome 为主，兼顾窄屏与触控。iOS 的状态栏、键盘和安装后的视口行为还需实机验证，桌面测试不能保证这些系统界面的显示效果。
+
+## 隐私与联网边界
+
+- 图书文件、正文、封面、阅读进度和阅读设置保存在本机，不会上传到 GitHub 或开发者服务。
+- 导入、普通阅读、书内搜索和 PDF 重排均在浏览器内进行。搜索查询与结果只保留在当前阅读会话的内存中。
+- 应用资源与主动下载的额外字体来自本站；不使用运行时字体 CDN、远程图书信息查询、统计分析或遥测。
+- 只有主动提交的反馈文字会发送到反馈服务。应用不会自动附加图书、书名、书架或阅读记录；请勿自行填写私密正文。反馈长度与服务端连接信息的边界见 [反馈实现](src/lib/feedback.ts)。
+
+图书数据使用 IndexedDB；应用离线资源与可选字体使用各自的缓存。图书不会被复制到应用资源缓存或部署产物中。
+
+EPUB 的脚本和外部网络访问受限制；PDF 使用 PDF.js 的 Worker 和 Canvas 渲染，不执行文档 JavaScript；TXT 中的 HTML、脚本和链接按原文显示。导入的文件仍应来自你有权阅读的来源。完整维护规则见 [AGENTS.md](AGENTS.md)。
+
+## 本地开发
+
+需要 Node.js 24 或更新版本，以及 [package.json](package.json) 指定的 pnpm。使用已提交的锁文件安装依赖：
+
+```sh
 pnpm install --frozen-lockfile
 pnpm run dev
-pnpm run check
-pnpm run test:e2e
-pnpm run preview
 ```
 
-`pnpm run check` runs unit tests, lint, TypeScript, and the production build.
-`pnpm run test:e2e` builds the production application and exercises synthetic EPUB/PDF/text import, navigation, cross-format search, source highlighting, progress restoration, and PWA/cache privacy in Chrome. Install Chrome once with `pnpm exec playwright install chrome` when it is not already available.
+打开终端显示的本机地址。生产构建与验证命令如下：
 
-### Local Paper Reflow
+| 命令 | 用途 |
+| --- | --- |
+| `pnpm test` | 单元测试 |
+| `pnpm run lint` | Oxlint 与 Stylelint |
+| `pnpm run build` | TypeScript 检查与生产构建 |
+| `pnpm run check` | 依次执行单元测试、lint 和生产构建 |
+| `pnpm run test:e2e` | 构建生产版本，并运行 Chrome 浏览器验收 |
+| `pnpm run preview` | 预览已经生成的生产构建 |
 
-The current paper tool is fully local and deterministic. It uses PDF.js text items, coordinates, font geometry, column detection, line joining, repeated-margin detection, and conservative block classification. It does not call a model or provider, and it does not invent text for pages whose text layer cannot be reconstructed. The first version supports text-layer PDFs only; OCR, editable ordering, export, and formula-to-LaTeX conversion are not yet included.
+浏览器验收使用 Chrome，缺少浏览器时可运行 `pnpm exec playwright install chrome`。测试使用合成文件，不应加入真实书籍、个人文档、浏览器数据或截图。PWA 旧版本升级用例需要额外的基线构建；准备条件见 [离线与更新验收说明](e2e/text-offline.spec.md)。
 
-## Deployment
+### 代码导航
 
-Pushes to `main` run unit tests, lint, type-check, and the production build, then publish `dist/` through GitHub Actions to GitHub Pages. Browser E2E tests are not run in GitHub Actions; use `pnpm run test:e2e` locally. GitHub Actions is used only for CI/CD; the application has no server process.
+项目使用 React、TypeScript 和 Vite，界面采用 Konsta 的 iOS 主题与 Tailwind CSS。各格式使用独立阅读适配器。
 
-The production build uses relative paths so application chunks, PDF workers, the manifest, and the service worker resolve correctly beneath `/WebReader/`.
+| 入口 | 职责与文档 |
+| --- | --- |
+| [应用协调](src/App.md) | 书架、导入、阅读面板、偏好与格式分发 |
+| [TXT 阅读器](src/readers/TextReader.md) | 解码、源位置、翻页与虚拟滚动 |
+| [PDF 阅读器](src/readers/PdfReader.md) | 原始页面、文本层、文章与校对视图 |
+| [本地存储](src/lib/storage.ts) | 图书、设置、进度与数据库兼容 |
+| [可选字体](src/lib/optionalFont.md) | 下载、完整性校验、本机缓存与字体生命周期 |
 
-## Privacy And Security
+模块的设计和契约放在代码旁的 Markdown 文档中；协作、隐私和发布规则以 [AGENTS.md](AGENTS.md) 为准。
 
-- No accounts, analytics, telemetry, cloud storage, runtime CDN, or remote metadata lookups
-- Feedback is an explicit text-only request to `feedback.070315.site`, limited to 2000 characters. The service retains necessary connection details for rate limiting and abuse prevention; do not include sensitive information
-- Ordinary reading, importing, search, progress updates, and PDF reflow send no book text or search queries over the network
-- TXT is rendered as text, never as HTML: scroll fragments use React text nodes, paged chapters are generated with escaped source text, and raw markup, scripts, links, and images stay literal. Only a bounded window of scroll fragments or one bounded chapter document is mounted at a time
-- Content translation, provider credentials, and translation network routes are not part of the application
-- Source books are stored in browser IndexedDB and never included in GitHub artifacts
-- EPUB scripted content and external network access are blocked by Content Security Policy
-- PDF files use worker-backed Canvas rendering as the authoritative source, with an official PDF.js TextLayer overlay for local selection. Continuous mode mounts only a bounded page window, and WebReader does not create PDF scripting managers, sandboxes, or run document JavaScript actions. Bounded local analysis preserves source-item provenance and stable block IDs for alignment
-- Scroll mode is format-aware: reflowable EPUB scrolls continuously within each chapter and advances at chapter boundaries; TXT uses a bounded virtualized list, while its paged mode uses generated chapter documents in the local foliate paginator; fixed-layout EPUB remains paginated
-- Reader fonts use local system stacks or fonts embedded by the publisher; WebReader does not fetch remote fonts
-- Extensions and MIME types are checked alongside file signatures where available. EPUB ZIP containers are preflighted with bounded entry count, per-entry and total expanded sizes, compression ratio, metadata, path, duplicate-entry, and encryption checks before import
+## 构建与部署
 
-Only use books you have the right to read. WebReader does not implement or circumvent DRM.
+WebReader 是静态网站，发布在 GitHub Pages 的 `/WebReader/` 子路径下，不需要应用服务器。静态资源、Worker 和应用入口保留子路径兼容。
 
-## License
+[Deploy Pages](.github/workflows/pages.yml) 在 `main` 推送或手动触发时运行，使用锁文件安装依赖、执行项目检查，成功后上传构建并部署。其他分支和拉取请求由 [Checks](.github/workflows/checks.yml) 验证。浏览器验收在本地运行，不属于当前 GitHub Actions 流程。
 
-MIT. Third-party packages remain under their respective licenses.
+`dist/` 是生成的部署产物，不手动修改，也不提交到仓库。工作流详情见 [Pages 说明](.github/workflows/pages.md)。
 
-The interface uses a locally bundled Konsta iOS theme. TXT has a floating toolbar that hides after idle time and returns on a central single tap or the keyboard-accessible reveal action. Text selection, active pointers, panels and toolbar focus keep controls visible. Settings, contents and search overlay a stable reading viewport. iPhone PWA performance and keyboard behavior still require device acceptance.
+## 许可
 
-Reader appearance follows the system by default. Choosing one of the four manual backgrounds opts out; select System appearance in reader settings to follow it again.
+项目代码采用 [MIT License](LICENSE)。第三方依赖遵循各自许可；随项目分发的霞鹜文楷遵循 [SIL OFL 1.1 及上游附加授权](public/fonts/OFL-LXGWWenKai.txt)。
