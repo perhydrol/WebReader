@@ -7,3 +7,5 @@ The shelf follows system appearance. Its actions use the user-approved neutral g
 Continue-reading headings are separated from their action; book metadata is centered within its source-independent information column. Neutral notices retain a compact dismiss target.
 
 Passes the application-owned optional-font state into application settings without starting downloads.
+
+The title has no add action. The upload area handles both native file selection and drag/drop; it displays import progress and disables itself while busy.

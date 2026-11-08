@@ -56,11 +56,7 @@ export function LibraryView({ optionalFontState, books, language, languageContro
 
       <section className="library-main" hidden={settings}>
         <header className="library-header">
-          <Navbar className="library-navbar" title={<h1>{t("yourBooks")}</h1>} right={
-            <ShelfButton inline type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
-              <Plus />{busy ? t("importing") : t("addBooks")}
-            </ShelfButton>
-          } />
+          <Navbar className="library-navbar" title={<h1>{t("yourBooks")}</h1>} />
           <input
             ref={fileInputRef}
             className="visually-hidden"
@@ -99,7 +95,7 @@ export function LibraryView({ optionalFontState, books, language, languageContro
           }}
         >
           <Import />
-          <span>{t("dropBooks")}</span>
+          <span>{busy ? t("importing") : t("dropBooks")}</span>
           <small>{t("maxFileSize")}</small>
         </ShelfButton>
 

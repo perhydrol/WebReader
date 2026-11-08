@@ -2,12 +2,28 @@ import { expect, test } from "@playwright/test";
 import { chapterText, textPayload } from "./syntheticText";
 import { showReaderToolbar } from "./readerControls";
 
+test("combines file selection and drag import in the upload area", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "添加图书", exact: true })).toHaveCount(0);
+  const upload = page.getByRole("button", { name: /点击选择或拖入/ });
+  const chooser = page.waitForEvent("filechooser");
+  await upload.click();
+  await (await chooser).setFiles(textPayload(chapterText(1, 2), "selected.txt"));
+  await expect(page.getByRole("button", { name: "打开《selected》" })).toBeVisible();
+  await upload.evaluate((element) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File(["拖入测试正文。"], "dropped.txt", { type: "text/plain" }));
+    element.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+  });
+  await expect(page.getByRole("button", { name: "打开《dropped》" })).toBeVisible();
+});
+
 test("uses neutral dark controls with readable labels instead of saturated accent fills", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.locator(".library-shell")).toHaveClass(/dark/);
-  for (const name of ["应用设置", "添加图书", "选择文件"]) {
+  for (const name of ["应用设置", "选择文件"]) {
     const style = await page.getByRole("button", { name, exact: true }).evaluate((element) => {
       const css = getComputedStyle(element);
       return { color: css.color, background: css.backgroundColor };

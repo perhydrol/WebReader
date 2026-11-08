@@ -69,7 +69,7 @@ test("serves TXT reading from the WebReader subpath after an offline restart", a
 
     await context.setOffline(true);
     await page.reload();
-    await expect(page.getByRole("button", { name: "添加图书" })).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("button", { name: /点击选择或拖入/ })).toBeVisible({ timeout: 60_000 });
     await page.getByRole("button", { name: "应用设置" }).click();
     await expect(page.getByText("清除网站数据", { exact: false })).toBeVisible();
     await page.getByRole("button", { name: "反馈", exact: true }).click();
