@@ -1,6 +1,19 @@
 # Local plans
-/plan.md
-/text-performance-plan.md
+/.local-plans/
+
+# Local package-manager stores and databases
+.pnpm-store/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Local scratch files
 /synthetic-reading-8mb.txt
 
 # Logs
