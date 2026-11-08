@@ -1,6 +1,34 @@
 declare module "foliate-js/view.js";
+declare module "foliate-js/paginator.js";
 
 declare global {
+  interface FoliatePaginatorBook {
+    dir?: string;
+    sections: Array<{
+      id?: unknown;
+      linear?: string;
+      size?: number;
+      load: () => string | Promise<string>;
+      unload?: () => void;
+    }>;
+  }
+
+  interface FoliatePaginatorTarget {
+    index: number;
+    anchor?: number | ((doc: Document) => Node | Range | null);
+    select?: boolean;
+  }
+
+  interface FoliatePaginatorElement extends HTMLElement {
+    open: (book: FoliatePaginatorBook) => void;
+    goTo: (target: FoliatePaginatorTarget) => Promise<void>;
+    prev: (distance?: number) => Promise<void>;
+    next: (distance?: number) => Promise<void>;
+    setStyles: (styles: string) => void;
+    destroy: () => void;
+    getContents: () => Array<{ index: number; doc: Document }>;
+  }
+
   interface FoliateBookMetadata {
     title?: string | Record<string, string>;
     author?: string | { name?: string } | Array<string | { name?: string }>;
@@ -51,6 +79,7 @@ declare global {
 
   interface HTMLElementTagNameMap {
     "foliate-view": FoliateViewElement;
+    "foliate-paginator": FoliatePaginatorElement;
   }
 }
 

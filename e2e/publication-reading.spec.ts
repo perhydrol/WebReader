@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { isInjectedBrowserMessage, isInjectedBrowserRequest } from "./browserNoise";
 import { syntheticEpub, syntheticPdf } from "./syntheticBooks";
+import { multiParagraphText, textPayload } from "./syntheticText";
 
 test("opens a synthetic EPUB and keeps it readable across mode changes", async ({ page }) => {
   await page.goto("/");
@@ -22,10 +24,39 @@ test("opens a synthetic EPUB and keeps it readable across mode changes", async (
   await expect(page.getByText("无法打开此 EPUB 文件。")).toHaveCount(0);
 });
 
+test("keeps EPUB and TXT foliate instances isolated across books", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles([
+    { name: "synthetic.epub", mimeType: "application/epub+zip", buffer: syntheticEpub() },
+    textPayload(multiParagraphText(20)),
+  ]);
+  await expect(page.getByRole("button", { name: "打开《synthetic》" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "打开《synthetic reader》" })).toBeVisible();
+
+  await page.getByRole("button", { name: "打开《synthetic》" }).click();
+  await expect(page.locator("foliate-view")).toBeVisible();
+  await page.getByRole("button", { name: "返回书架" }).click();
+
+  await page.getByRole("button", { name: "打开《synthetic reader》" }).click();
+  await expect(page.locator(".text-stage-paged")).toBeVisible();
+  await expect(page.locator(".text-stage-paged")).toHaveAttribute("data-source-offset", /^\d+$/);
+  await page.getByRole("button", { name: "下一页" }).click();
+  await page.getByRole("button", { name: "返回书架" }).click();
+
+  await page.getByRole("button", { name: "打开《synthetic》" }).click();
+  await expect(page.locator("foliate-view")).toBeVisible();
+  await expect(page.getByText("无法打开此 EPUB 文件。")).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+});
+
 test("opens a synthetic PDF and preserves its page across mode changes", async ({ page }) => {
   const browserErrors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error") browserErrors.push(message.text());
+    if (message.type() === "error" && !isInjectedBrowserMessage(message.text())) {
+      browserErrors.push(message.text());
+    }
   });
   page.on("pageerror", (error) => browserErrors.push(error.message));
   await page.goto("/");
@@ -74,6 +105,7 @@ test("serves an installable application shell without caching imported books", a
 test("searches a synthetic EPUB without sending publication text", async ({ page }) => {
   const unexpectedRequests: string[] = [];
   page.on("request", (request) => {
+    if (isInjectedBrowserRequest(request.url())) return;
     const url = new URL(request.url());
     if (url.origin !== "http://127.0.0.1:4175") unexpectedRequests.push(request.url());
   });

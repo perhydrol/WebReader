@@ -8,7 +8,7 @@ import { ReaderOutline } from "./components/ReaderOutline";
 import { ReaderSearch } from "./components/ReaderSearch";
 import { ReaderSettings } from "./components/ReaderSettings";
 import { submitFeedback, MAX_FEEDBACK_LENGTH } from "./lib/feedback";
-import { BookFormatError, detectBookFormat, displayTitle, formatBytes } from "./lib/formats";
+import { BookFormatError, detectBookFormat, displayTitle, formatBytes, isLegacyMarkdownRecord } from "./lib/formats";
 import { fingerprintFile } from "./lib/fingerprint";
 import { CoalescingWriteQueue } from "./lib/coalescingWriteQueue";
 import { resolveLanguage, translate, type Language, type TranslationKey, type TranslationVariables } from "./lib/i18n";
@@ -351,11 +351,15 @@ export default function App() {
   }, [refreshBooks, t]);
 
   const openBook = useCallback(async (book: BookRecord) => {
+    setMessage(undefined);
+    if (isLegacyMarkdownRecord(book)) {
+      setMessage(t("markdownUnsupported"));
+      return;
+    }
     const currentBook = {
       ...book,
       readingProfile: readingProfileRef.current.get(book.id) ?? book.readingProfile,
     };
-    setMessage(undefined);
     setReaderPanel(undefined);
     setOutline([]);
     setAutomaticOutline(false);
@@ -596,17 +600,17 @@ export default function App() {
               )}
               {activeBook.format === "txt" && (
                 <TextReader
+                  key={activeBook.id}
                   layoutRevision={readerPanel ?? "closed"}
                   readingProfile={activeBook.readingProfile}
                   file={activeFile}
-                  fileName={activeBook.fileName}
-                  mediaType={activeBook.mediaType}
                   locator={activeBook.locator}
                   preferences={preferences}
                   onProgress={handleProgress}
                   onOutline={handleOutline}
                   onCapabilities={handleCapabilities}
                   onCurrentTarget={handleCurrentTarget}
+                  onKeyDown={handleReaderKeyDown}
                   navigationRef={navigationRef}
                   t={t}
                 />
@@ -664,7 +668,7 @@ export default function App() {
             ref={fileInputRef}
             className="visually-hidden"
             type="file"
-            accept=".epub,.pdf,.txt,.md,application/epub+zip,application/pdf,text/plain,text/markdown"
+            accept=".epub,.pdf,.txt,application/epub+zip,application/pdf,text/plain"
             multiple
             disabled={busy}
             onChange={(event) => void importFiles(Array.from(event.target.files ?? []))}

@@ -2,6 +2,15 @@
 
 `App.css` owns the shelf shell, reader shell, toolbar, panels, PDF and text stages, dialogs, reader themes, and responsive breakpoints.
 
+## TXT stages
+
+- `.text-stage-scroll` is a non-scrolling host. `react-virtuoso` owns `.text-scroll-list`; `.text-scroll-item` centers a content-width column inside fixed side padding. The list's top and bottom padding belongs to scroll content, so a restored mid-document target sits at the viewport top edge while the very start of the document keeps the inset.
+- `.text-stage-paged` hosts `.text-paginator`. The foliate paginator renders inside its own iframe, so parent `article`/`p` styles do not apply. Typography, theme color, paragraph spacing, indentation, and the in-document highlight rule come from `buildTextBookStyles`.
+- `.text-fragment` keeps source newlines with `pre-wrap` and permits long unbroken text to wrap. Paragraph spacing is padding on the last fragment; continuation fragments add no indent or spacing. There are no Markdown block classes.
+- `.text-status` is the only loading/empty state inside the stage. It must remain centered without adding scrollable content.
+- Scroll highlights use the global `.text-search-highlight`. Paged highlights reuse the class inside the generated document without padding so marking text cannot reflow the paginator.
+- Theme selectors on `.text-stage` color scroll content; paged content reads the same colors from `TEXT_THEME_COLORS` because it cannot inherit from the parent document.
+
 ## Safe-area contract
 
 - `:root` publishes `--safe-area-top`, `--safe-area-right`, `--safe-area-bottom`, and `--safe-area-left` from `env(safe-area-inset-*, 0px)`. The browser reports the sizes; the stylesheet does not detect device models or hard-code status-bar heights.

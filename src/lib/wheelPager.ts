@@ -53,10 +53,18 @@ export function normalizedWheelDelta(event: Pick<WheelEvent, "deltaX" | "deltaY"
   return primary;
 }
 
+interface WheelTarget {
+  closest?: (selector: string) => Element | null;
+  ownerDocument?: Document | null;
+}
+
 export function shouldIgnoreWheel(event: WheelEvent): boolean {
   if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return true;
-  const target = event.target;
-  if (target instanceof Element && target.closest("input, textarea, select, [contenteditable='true']")) return true;
-  const selection = target instanceof Node ? target.ownerDocument?.getSelection() : undefined;
+  const target = event.target as WheelTarget | null;
+  if (typeof target?.closest === "function"
+    && target.closest("input, textarea, select, [contenteditable='true']")) {
+    return true;
+  }
+  const selection = target?.ownerDocument?.getSelection?.();
   return Boolean(selection && !selection.isCollapsed);
 }

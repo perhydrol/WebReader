@@ -1,4 +1,4 @@
-import type { BookFormat } from "../types/library";
+import type { BookFormat, BookRecord } from "../types/library";
 import type { TranslationKey } from "./i18n";
 import { validateEpubContainer } from "./epubValidation";
 
@@ -7,7 +7,7 @@ export const MAX_TEXT_FILE_SIZE = 8 * 1024 * 1024;
 
 const EPUB_MIME = "application/epub+zip";
 const PDF_MIME = "application/pdf";
-const TEXT_MIMES = new Set(["text/plain", "text/markdown"]);
+const MARKDOWN_MIME = "text/markdown";
 
 export class BookFormatError extends Error {
   readonly translationKey: TranslationKey;
@@ -25,7 +25,8 @@ export async function detectBookFormat(file: File): Promise<BookFormat> {
   }
 
   const extension = file.name.split(".").pop()?.toLowerCase();
-  const textHint = TEXT_MIMES.has(file.type) || extension === "txt" || extension === "md";
+  const isMarkdown = extension === "md" || extension === "markdown" || file.type === MARKDOWN_MIME;
+  const textHint = file.type === "text/plain" || extension === "txt";
   if (textHint && file.size > MAX_TEXT_FILE_SIZE) throw new BookFormatError("textFileTooLarge");
   const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
   const isPdf = String.fromCharCode(...head.slice(0, 5)) === "%PDF-";
@@ -43,13 +44,21 @@ export async function detectBookFormat(file: File): Promise<BookFormat> {
       throw new BookFormatError("invalidEpub");
     }
   }
+  if (isMarkdown) throw new BookFormatError("unsupportedFormat");
   if (textHint) return "txt";
 
   throw new BookFormatError("unsupportedFormat");
 }
 
+export function isLegacyMarkdownRecord(
+  book: Pick<BookRecord, "format" | "fileName" | "mediaType">,
+): boolean {
+  return book.format === "txt"
+    && (book.mediaType === MARKDOWN_MIME || /\.(?:md|markdown)$/i.test(book.fileName));
+}
+
 export function displayTitle(fileName: string): string {
-  return fileName.replace(/\.(epub|pdf|txt|md)$/i, "").replace(/[_-]+/g, " ").trim()
+  return fileName.replace(/\.(epub|pdf|txt)$/i, "").replace(/[_-]+/g, " ").trim()
     || "Untitled";
 }
 

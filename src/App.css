@@ -284,39 +284,16 @@ h2 { margin: 0; font-size: 20px; }
 .continuous-pdf-page canvas { max-width: 100%; max-height: calc(100% - 18px); width: auto; height: auto; }
 .page-status { position: fixed; z-index: 4; left: 50%; bottom: calc(14px + var(--safe-area-bottom)); transform: translateX(-50%); padding: 5px 10px; border-radius: 4px; color: white; background: rgba(30,33,31,.78); font-size: 11px; }
 .text-stage { background: #f5f1e8; }
-.text-stage-scroll { overflow: auto; padding: 52px 82px 100px; }
-.text-stage-paged { position: relative; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; }
-.text-stage-paged::-webkit-scrollbar { display: none; }
+.text-stage-scroll { overflow: hidden; }
+.text-stage-paged { position: relative; overflow: hidden; }
 .text-stage.theme-white { background: #fff; color: #222522; }
 .text-stage.theme-night { background: #171918; color: #e5e8e2; }
 .text-stage.theme-contrast { background: white; color: #050505; }
-.text-stage article { width: 100%; margin: 0 auto; overflow-wrap: anywhere; }
-.text-stage-paged article {
-  width: var(--text-page-width); max-width: none; height: 100%; margin: 0; padding: var(--text-page-top-inset) var(--text-page-side-inset) var(--text-page-bottom-inset);
-  column-width: var(--text-content-width); column-gap: calc(var(--text-page-side-inset) * 2); column-fill: auto;
-}
-.text-stage article p { margin: 0 0 1em; white-space: pre-wrap; }
-.text-stage article .markdown-paragraph { white-space: pre-wrap; }
-.text-stage article .markdown-heading { margin: 0 0 .65em; line-height: 1.25; break-after: avoid; white-space: pre-wrap; }
-.text-stage article h1.markdown-heading { font-size: 1.8em; }
-.text-stage article h2.markdown-heading { font-size: 1.5em; }
-.text-stage article h3.markdown-heading { font-size: 1.28em; }
-.text-stage article h4.markdown-heading, .text-stage article h5.markdown-heading, .text-stage article h6.markdown-heading { font-size: 1.1em; }
-.text-stage article .markdown-list { margin: 0 0 1em; padding-inline-start: 1.6em; break-inside: avoid; }
-.text-stage article .markdown-list li { margin-block: .28em; white-space: pre-wrap; }
-.text-stage article .markdown-list-line { display: inline; }
-.text-stage article .markdown-quote { margin: 0 0 1em; padding: .35em 1em; border-inline-start: 3px solid rgba(23,107,87,.45); color: color-mix(in srgb, currentColor 82%, #687068); break-inside: avoid; }
-.text-stage article .markdown-quote p { margin: 0 0 .65em; }
-.text-stage article .markdown-quote p:last-child { margin-bottom: 0; }
-.text-stage article .markdown-code { margin: 0 0 1em; padding: .85em 1em; overflow-wrap: anywhere; white-space: pre-wrap; border: 1px solid rgba(108,113,105,.2); border-radius: 5px; color: inherit; background: rgba(108,113,105,.08); font: .88em/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; break-inside: avoid; }
-.text-stage article .markdown-inline-code { padding: .08em .28em; border-radius: 3px; background: rgba(108,113,105,.12); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
-.text-stage article .markdown-rule { margin: 1.3em 0; border: 0; border-top: 1px solid rgba(108,113,105,.34); }
-.text-stage article .markdown-link { color: var(--green-dark); text-decoration: underline; text-decoration-thickness: .08em; text-underline-offset: .15em; }
-.text-stage article .markdown-image-alt { color: var(--green-dark); font-style: italic; }
-.theme-night .text-stage article .markdown-quote { border-color: rgba(157,208,191,.55); color: #c4cbc3; }
-.theme-night .text-stage article .markdown-code { border-color: rgba(229,232,226,.18); background: rgba(229,232,226,.08); }
-.theme-night .text-stage article .markdown-link, .theme-night .text-stage article .markdown-image-alt { color: #b6e1d3; }
-.text-page-track { position: absolute; inset: 0 auto 0 0; pointer-events: none; }
+.text-scroll-list { padding: 52px 0 100px; box-sizing: border-box; }
+.text-scroll-item { width: 100%; max-width: calc(var(--text-content-width, 720px) + 164px); margin: 0 auto; padding: 0 82px; box-sizing: border-box; }
+.text-fragment { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; box-sizing: border-box; }
+.text-paged-host, .text-paginator { width: 100%; height: 100%; display: block; }
+.text-status { margin: 0; width: 100%; height: 100%; display: grid; place-items: center; color: var(--reader-toolbar-muted); font-size: 13px; }
 .spin { animation: reader-spin 1s linear infinite; }
 @keyframes reader-spin { to { transform: rotate(360deg); } }
 .reader-error { margin: 50px auto; max-width: 580px; padding: 18px; color: #8c302a; background: #faecea; border: 1px solid #edcbc7; border-radius: 6px; }
@@ -440,7 +417,8 @@ h2 { margin: 0; font-size: 20px; }
   .outline-panel, .search-panel { left: 0; }
   .settings-panel { right: 0; }
   .epub-stage { padding: 0 42px; }
-  .text-stage-scroll { padding: 34px 48px 90px; }
+  .text-scroll-list { padding: 34px 0 90px; }
+  .text-scroll-item { max-width: calc(var(--text-content-width, 720px) + 96px); padding: 0 48px; }
   .pdf-stage { padding-inline: 46px; }
   .pdf-paper-stage { padding-inline: 12px; }
   .pdf-view-toolbar { top: -28px; flex-wrap: wrap; }

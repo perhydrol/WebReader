@@ -1,8 +1,8 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import path from "node:path";
 import { syntheticPdf } from "./syntheticBooks";
+import { chapterText, textPayload } from "./syntheticText";
 
-const fixture = path.join(import.meta.dirname, "fixtures", "long-reader.md");
+const textFixture = textPayload(chapterText(6, 4), "long-reader.txt");
 
 type Insets = { top: number; right: number; bottom: number; left: number };
 type Box = { x: number; y: number; width: number; height: number };
@@ -44,34 +44,15 @@ async function expectNoPageScroll(page: Page, height: number) {
 }
 
 async function importAndOpenText(page: Page) {
-  await page.locator('input[type="file"]').setInputFiles(fixture);
+  await page.locator('input[type="file"]').setInputFiles(textFixture);
   await expect(page.getByRole("button", { name: "打开《long reader》" })).toBeVisible();
   await page.getByRole("button", { name: "打开《long reader》" }).click();
   await expect(page.locator(".text-stage-paged")).toBeVisible();
 }
 
-async function topVisibleBlockStart(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const surface = document.querySelector<HTMLElement>(".reading-surface");
-    if (!surface) return -1;
-    const surfaceRect = surface.getBoundingClientRect();
-    const lineTop = surfaceRect.top + 12;
-    let best = -1;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    for (const node of document.querySelectorAll<HTMLElement>(".text-stage [data-source-start]")) {
-      const rect = node.getBoundingClientRect();
-      if (rect.right <= surfaceRect.left || rect.left >= surfaceRect.right) continue;
-      if (rect.bottom <= surfaceRect.top || rect.top >= surfaceRect.bottom) continue;
-      const start = Number(node.dataset.sourceStart);
-      if (!Number.isFinite(start) || start <= 0) continue;
-      const distance = rect.top < lineTop ? lineTop - rect.top : rect.top - lineTop;
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        best = start;
-      }
-    }
-    return best;
-  });
+async function pagedOffset(page: Page): Promise<number> {
+  const value = await page.locator(".text-stage-paged").getAttribute("data-source-offset");
+  return value === null ? Number.NaN : Number(value);
 }
 
 test("declares viewport-fit=cover in the production HTML", async ({ request }) => {
@@ -180,15 +161,16 @@ test("portrait PWA keeps the shelf, reader, panels, and dialog clear of the stat
   const search = await boxOf(page.locator(".search-panel"));
   expectInsideSafeArea(search, insets, viewport);
   const searchBox = page.getByRole("searchbox", { name: "书内搜索" });
-  await searchBox.fill("第一章");
+  await searchBox.fill("第 2 章");
   await searchBox.press("Enter");
   await expect(page.locator(".search-result").first()).toBeVisible();
   await page.getByRole("button", { name: "关闭书内搜索" }).click();
 
+  const beforeTurn = await pagedOffset(page);
   await page.getByRole("button", { name: "下一页" }).click();
   await page.getByRole("button", { name: "下一页" }).click();
-  await expect.poll(() => page.locator(".text-stage-paged").evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
-  const blockStart = await topVisibleBlockStart(page);
+  await expect.poll(() => pagedOffset(page)).toBeGreaterThan(beforeTurn);
+  const blockStart = await pagedOffset(page);
   expect(blockStart).toBeGreaterThan(0);
 
   await page.setViewportSize({ width: 844, height: 390 });
@@ -198,18 +180,10 @@ test("portrait PWA keeps the shelf, reader, panels, and dialog clear of the stat
   const stage = page.locator(".text-stage-paged");
   await expect.poll(() => stage.evaluate((element) => element.clientHeight))
     .toBeCloseTo(landscapeViewport.height - 58 - landscapeInsets.bottom, 0);
-  await expect.poll(() => page.evaluate((start) => {
-    const surface = document.querySelector<HTMLElement>(".reading-surface");
-    if (!surface) return false;
-    const surfaceRect = surface.getBoundingClientRect();
-    return [...document.querySelectorAll<HTMLElement>(`[data-source-start="${start}"]`)].some((node) => {
-      const nodeRect = node.getBoundingClientRect();
-      return nodeRect.right > surfaceRect.left
-        && nodeRect.left < surfaceRect.right
-        && nodeRect.bottom > surfaceRect.top
-        && nodeRect.top < surfaceRect.bottom;
-    });
-  }, blockStart)).toBe(true);
+  await expect.poll(async () => {
+    const current = await pagedOffset(page);
+    return current <= blockStart + 40 && blockStart - current <= 5000;
+  }).toBe(true);
   await expectNoPageScroll(page, landscapeViewport.height);
 });
 

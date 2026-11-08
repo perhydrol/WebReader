@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WheelGesture, normalizedWheelDelta } from "./wheelPager";
+import { WheelGesture, normalizedWheelDelta, shouldIgnoreWheel } from "./wheelPager";
 
 describe("wheel pagination gesture", () => {
   it("turns once after accumulated movement and waits for the next gesture", () => {
@@ -28,5 +28,25 @@ describe("wheel pagination gesture", () => {
     expect(normalizedWheelDelta({ deltaX: 0, deltaY: 2, deltaMode: 1 }, 800)).toBe(32);
     expect(normalizedWheelDelta({ deltaX: 0, deltaY: -1, deltaMode: 2 }, 800)).toBe(-800);
     expect(normalizedWheelDelta({ deltaX: 70, deltaY: 12, deltaMode: 0 }, 800)).toBe(70);
+  });
+
+  it("recognizes editable targets and selections from another document realm", () => {
+    const event = (target: unknown): WheelEvent => ({
+      defaultPrevented: false, ctrlKey: false, metaKey: false, altKey: false, target,
+    }) as unknown as WheelEvent;
+
+    expect(shouldIgnoreWheel(event({
+      closest: (selector: string) => selector.includes("input") ? {} : null,
+      ownerDocument: { getSelection: () => null },
+    }))).toBe(true);
+    expect(shouldIgnoreWheel(event({
+      closest: () => null,
+      ownerDocument: { getSelection: () => ({ isCollapsed: false }) },
+    }))).toBe(true);
+    expect(shouldIgnoreWheel(event({
+      closest: () => null,
+      ownerDocument: { getSelection: () => ({ isCollapsed: true }) },
+    }))).toBe(false);
+    expect(shouldIgnoreWheel(event(null))).toBe(false);
   });
 });

@@ -1,0 +1,13 @@
+# Application shell
+
+`App.tsx` coordinates the local shelf, import/delete flows, reader toolbar and panels, preferences, shortcuts, and format dispatch. It owns no file parsing or reading DOM.
+
+## Contracts
+
+- Import validates through `detectBookFormat`, fingerprints locally, detects duplicates, writes metadata plus source blob in one transaction, and refreshes the shelf. Rejected files never create a row.
+- `openBook` first checks `isLegacyMarkdownRecord`. A legacy Markdown row shows `markdownUnsupported`, does not load its blob, and remains deletable from the shelf. Other books load their blob and mount the format-specific reader.
+- The TXT reader is keyed by book id and receives the shared `onKeyDown` handler so keys pressed inside the paginator iframe still reach reader shortcuts. It also receives the current reading profile, preferences, locator, and progress callbacks.
+- Progress and preference writes use the coalescing queue and are flushed when leaving the reader or hiding the page. The reader profile is remembered per book and written through the same ordered profile queue.
+- Capabilities from the active reader drive the outline/search buttons and the page-turn overlays. TXT advertises both reading profiles and search.
+
+The shelf remains usable if a reader fails; the root error boundary provides a local recovery path. See `AGENTS.md` for the product boundary and persistence invariants.

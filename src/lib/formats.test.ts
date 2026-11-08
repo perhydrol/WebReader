@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { detectBookFormat, displayTitle, formatBytes, MAX_FILE_SIZE, MAX_TEXT_FILE_SIZE } from "./formats";
+import type { BookRecord } from "../types/library";
+import {
+  detectBookFormat, displayTitle, formatBytes, isLegacyMarkdownRecord, MAX_FILE_SIZE, MAX_TEXT_FILE_SIZE,
+} from "./formats";
 
 function file(bytes: number[], name: string, type = ""): File {
   return new File([new Uint8Array(bytes)], name, { type });
@@ -137,8 +140,36 @@ describe("detectBookFormat", () => {
   });
 
   it("uses a lower safety limit for text rendered into browser DOM", async () => {
-    const oversizedText = { name: "large.md", type: "text/markdown", size: MAX_TEXT_FILE_SIZE + 1 } as File;
+    const oversizedText = { name: "large.txt", type: "text/plain", size: MAX_TEXT_FILE_SIZE + 1 } as File;
     await expect(detectBookFormat(oversizedText)).rejects.toMatchObject({ translationKey: "textFileTooLarge" });
+  });
+
+  it("rejects Markdown names and media types instead of treating them as TXT", async () => {
+    const cases: Array<[string, string]> = [
+      ["notes.md", ""],
+      ["notes.md", "text/plain"],
+      ["notes.md", "text/markdown"],
+      ["notes.txt", "text/markdown"],
+      ["notes.markdown", ""],
+    ];
+    for (const [name, type] of cases) {
+      await expect(detectBookFormat(file([0x23, 0x20, 0x41], name, type)))
+        .rejects.toMatchObject({ translationKey: "unsupportedFormat" });
+    }
+  });
+});
+
+describe("legacy Markdown records", () => {
+  const base: Pick<BookRecord, "format" | "fileName" | "mediaType"> = {
+    format: "txt", fileName: "notes.txt", mediaType: "text/plain",
+  };
+
+  it("identifies old Markdown rows without treating ordinary TXT as Markdown", () => {
+    expect(isLegacyMarkdownRecord({ ...base, fileName: "notes.md" })).toBe(true);
+    expect(isLegacyMarkdownRecord({ ...base, fileName: "notes.markdown" })).toBe(true);
+    expect(isLegacyMarkdownRecord({ ...base, mediaType: "text/markdown" })).toBe(true);
+    expect(isLegacyMarkdownRecord(base)).toBe(false);
+    expect(isLegacyMarkdownRecord({ ...base, format: "pdf", fileName: "notes.md" })).toBe(false);
   });
 });
 
