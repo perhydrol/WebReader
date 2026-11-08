@@ -29,6 +29,63 @@ test("uses neutral dark controls with readable labels instead of saturated accen
   expect(cardStyle).toEqual({ display: "grid", radius: "0px", background: "rgba(0, 0, 0, 0)" });
 });
 
+test("aligns narrow sheets and follows system appearance until a manual theme is chosen", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(textPayload(chapterText(4, 5), "layout.txt"));
+  const notice = await page.locator(".notice").evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(notice).toBe("rgb(28, 28, 30)");
+  await page.getByRole("button", { name: "打开《layout》" }).click();
+  await expect(page.locator(".reader-shell")).toHaveClass(/theme-night/);
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  const header = await page.locator(".settings-panel .reader-panel-header").boundingBox();
+  const modes = await page.getByRole("group", { name: "阅读方式" }).boundingBox();
+  expect(modes!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+  expect(modes!.x + modes!.width).toBeLessThanOrEqual(378);
+  await page.getByRole("button", { name: "暖纸", exact: true }).click();
+  await expect(page.locator(".reader-shell")).toHaveClass(/theme-paper/);
+  await page.getByRole("button", { name: "关闭阅读设置" }).click();
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator(".reader-shell")).toHaveClass(/theme-paper/);
+  await showReaderToolbar(page);
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  await page.getByRole("button", { name: "跟随系统" }).click();
+  await page.getByRole("button", { name: "关闭阅读设置" }).click();
+  await expect(page.locator(".reader-shell")).toHaveClass(/theme-white/);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator(".reader-shell")).toHaveClass(/theme-night/);
+  await showReaderToolbar(page);
+  await page.getByRole("button", { name: "书内搜索", exact: true }).click();
+  const input = await page.getByRole("searchbox").boundingBox();
+  const clear = await page.locator(".reader-search-form").getByRole("button", { name: "关闭提示" }).boundingBox();
+  const submit = await page.getByRole("button", { name: "搜索", exact: true }).boundingBox();
+  expect(Math.abs(input!.y - clear!.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(input!.y - submit!.y)).toBeLessThanOrEqual(2);
+  expect(input!.x + input!.width).toBeLessThanOrEqual(clear!.x);
+  expect(clear!.x + clear!.width).toBeLessThanOrEqual(submit!.x);
+  expect(submit!.x + submit!.width).toBeLessThanOrEqual(378);
+});
+
+test("uses an icon back action and confines toolbar blur to its glass pane", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "应用设置" }).click();
+  const back = page.getByRole("button", { name: "返回书架" });
+  expect((await back.textContent())?.trim()).toBe("");
+  expect(await page.getByRole("button", { name: "中", exact: true }).evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  await back.click();
+  await page.locator('input[type="file"]').setInputFiles(textPayload(chapterText(3, 4), "glass.txt"));
+  await page.getByRole("button", { name: "打开《glass》" }).click();
+  await expect(page.locator('.text-stage[data-view-ready="book"]')).toBeVisible();
+  const outsideBlur = await page.locator(".reader-toolbar").evaluate((root) => [root, ...root.querySelectorAll("*")]
+    .filter((element) => getComputedStyle(element).backdropFilter !== "none" && !element.closest(".reader-toolbar-pane")).length);
+  expect(outsideBlur).toBe(0);
+  const pane = await page.locator(".reader-toolbar-pane").boundingBox();
+  expect(844 - pane!.y - pane!.height).toBeCloseTo(12, 0);
+});
+
 test("ships the iOS theme offline and keeps reader geometry stable under sheets", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".k-ios")).toHaveCount(1);
@@ -76,23 +133,22 @@ test("reveals chrome from real paged content without changing its source or view
   await expect(stage).toBeVisible();
   const before = await stage.boundingBox();
   const offset = await stage.getAttribute("data-source-offset");
-  await page.clock.install();
-  await page.clock.runFor(4200);
+  await page.waitForTimeout(4200);
   await expect(page.locator(".reader-toolbar")).toBeHidden();
   const frame = page.frames().find((item) => item.url().startsWith("blob:"));
   expect(frame).toBeDefined();
   const x = before!.x + before!.width / 2;
   const y = before!.y + 120;
   await page.mouse.click(x, y);
-  await page.clock.runFor(300);
+  await page.waitForTimeout(600);
   await expect(page.locator(".reader-toolbar")).toBeVisible();
   expect(await stage.boundingBox()).toEqual(before);
   expect(await stage.getAttribute("data-source-offset")).toBe(offset);
   await page.mouse.dblclick(x, y);
-  await page.clock.runFor(5000);
+  await page.waitForTimeout(5000);
   await expect(page.locator(".reader-toolbar")).toBeVisible();
   await frame!.evaluate(() => getSelection()?.removeAllRanges());
-  await page.clock.runFor(4200);
+  await page.waitForTimeout(4200);
   await expect(page.locator(".reader-toolbar")).toBeHidden();
   await page.locator(".chrome-reveal").focus();
   await page.keyboard.press("Enter");

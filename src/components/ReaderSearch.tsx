@@ -76,7 +76,8 @@ export function ReaderSearch({ controllerRef, onClose, t }: ReaderSearchProps) {
       </header>
       <form className="reader-search-form" role="search" onSubmit={(event) => { event.preventDefault(); void runSearch(); }}>
         <label className="sr-only" htmlFor="reader-search-input">{t("searchBook")}</label>
-        <ListInput
+        <div className="reader-search-field"><ListInput
+          component="div"
           inputId="reader-search-input"
           type="search"
           maxLength={MAX_SEARCH_QUERY_LENGTH}
@@ -84,7 +85,7 @@ export function ReaderSearch({ controllerRef, onClose, t }: ReaderSearchProps) {
           value={query}
           placeholder={t("searchPlaceholder")}
           onChange={(event) => setQuery((event.target as HTMLInputElement).value.slice(0, MAX_SEARCH_QUERY_LENGTH))}
-        />
+        /></div>
         <Button clear type="button" aria-label={t("dismiss")} onClick={() => setQuery("")}><X /></Button>
         <Button clear className="primary-button" type="submit" disabled={searching || !query.trim()} aria-label={t("searchAction")}>
           {searching ? <LoaderCircle className="spin" /> : <Search />}

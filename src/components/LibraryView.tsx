@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Block, Button, Card, Navbar } from "konsta/react";
+import { Block, Card, Navbar } from "konsta/react";
 import { BookOpen, FileText, Import, Library, MessageSquare, Plus, Settings2, Trash2, X } from "lucide-react";
 import type { BookRecord } from "../types/library";
 import type { Language, TranslationKey, TranslationVariables } from "../lib/i18n";
 import { formatBytes, isLegacyMarkdownRecord } from "../lib/formats";
+import { ShelfButton } from "./ShelfButton";
 import { AppSettings } from "./AppSettings";
 
 function formatDate(timestamp: number, language: Language): string {
@@ -39,11 +40,11 @@ export function LibraryView({ books, language, languageControl, busy, dragging, 
       <aside className="sidebar">
         <div className="brand"><span className="brand-mark"><BookOpen /></span><span>WebReader</span></div>
         <nav aria-label={t("librarySections")}>
-          <Button className="nav-item active" type="button"><Library />{t("library")} <span>{books.length}</span></Button>
+          <ShelfButton className="nav-item active" type="button"><Library />{t("library")} <span>{books.length}</span></ShelfButton>
         </nav>
         <div className="sidebar-actions">
-          <Button clear ref={settingsRef} aria-label={t("appSettings")} onClick={() => setSettings(true)}><Settings2 /></Button>
-          {!settings && <Button className="feedback-button" type="button" onClick={() => setFeedbackOpen(true)}><MessageSquare />{t("feedback")}</Button>}
+          <ShelfButton inline ref={settingsRef} aria-label={t("appSettings")} onClick={() => setSettings(true)}><Settings2 /></ShelfButton>
+          {!settings && <ShelfButton className="feedback-button" type="button" onClick={() => setFeedbackOpen(true)}><MessageSquare />{t("feedback")}</ShelfButton>}
         </div>
         <div className="privacy-note">
           <strong>{t("privateTitle")}</strong>
@@ -54,9 +55,9 @@ export function LibraryView({ books, language, languageControl, busy, dragging, 
       <section className="library-main" hidden={settings}>
         <header className="library-header">
           <Navbar className="library-navbar" title={<h1>{t("yourBooks")}</h1>} right={
-            <Button inline type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+            <ShelfButton inline type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
               <Plus />{busy ? t("importing") : t("addBooks")}
-            </Button>
+            </ShelfButton>
           } />
           <input
             ref={fileInputRef}
@@ -69,15 +70,15 @@ export function LibraryView({ books, language, languageControl, busy, dragging, 
           />
         </header>
 
-        {message && <div className="notice" role="status"><span>{message}</span><Button type="button" onClick={() => setMessage(undefined)} aria-label={t("dismiss")}><X /></Button></div>}
+        {message && <div className="notice" role="status"><span>{message}</span><ShelfButton type="button" onClick={() => setMessage(undefined)} aria-label={t("dismiss")}><X /></ShelfButton></div>}
         {updateAction && (
           <div className="notice update-notice" role="status">
             <span>{t("updateReady")}</span>
-            <Button className="notice-action" type="button" onClick={updateAction}>{t("update")}</Button>
+            <ShelfButton className="notice-action" type="button" onClick={updateAction}>{t("update")}</ShelfButton>
           </div>
         )}
 
-        <Button outline
+        <ShelfButton outline
           className={`drop-zone ${dragging ? "dragging" : ""}`}
           type="button"
           disabled={busy}
@@ -98,17 +99,17 @@ export function LibraryView({ books, language, languageControl, busy, dragging, 
           <Import />
           <span>{t("dropBooks")}</span>
           <small>{t("maxFileSize")}</small>
-        </Button>
+        </ShelfButton>
 
-        {continuing && <Card className="continue-reading"><strong>{t("continueReading")}</strong><Button clear onClick={() => void openBook(continuing)}>{continuing.title} · {Math.round((continuing.locator?.progression ?? 0) * 100)}%</Button></Card>}
+        {continuing && <Card className="continue-reading"><strong>{t("continueReading")}</strong><ShelfButton onClick={() => void openBook(continuing)}>{continuing.title} · {Math.round((continuing.locator?.progression ?? 0) * 100)}%</ShelfButton></Card>}
         {books.length === 0 ? (
           <Block className="empty-state">
             <div className="empty-icon"><BookOpen /></div>
             <h2>{t("shelfEmpty")}</h2>
             <p>{t("shelfEmptyText")}</p>
-            <Button className="secondary-button" type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+            <ShelfButton className="secondary-button" type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
               <Plus />{busy ? t("importing") : t("chooseFiles")}
-            </Button>
+            </ShelfButton>
           </Block>
         ) : (
           <section className="book-grid" aria-label={t("books")}>
@@ -116,7 +117,7 @@ export function LibraryView({ books, language, languageControl, busy, dragging, 
               const percent = Math.round((book.locator?.progression ?? 0) * 100);
               return (
                 <Card component="article" className="book-card" key={book.id}>
-                  <Button className="book-open" type="button" onClick={() => void openBook(book)} aria-label={t("openBook", { title: book.title })}>
+                  <ShelfButton clear className="book-open" type="button" onClick={() => void openBook(book)} aria-label={t("openBook", { title: book.title })}>
                     <div className={`book-cover cover-${book.format}`}>
                       {book.format === "pdf" ? <FileText /> : <BookOpen />}
                       <span>{formatLabel(book.format)}</span>
@@ -127,8 +128,8 @@ export function LibraryView({ books, language, languageControl, busy, dragging, 
                       <div className="progress-track"><i style={{ width: `${percent}%` }} /></div>
                       <small>{book.locator ? t("percentRead", { percent }) : t("addedOn", { date: formatDate(book.addedAt, language) })} · {formatBytes(book.size)}</small>
                     </div>
-                  </Button>
-                  <Button className="card-menu" type="button" title={t("removeBook", { title: book.title })} aria-label={t("removeBook", { title: book.title })} onClick={() => setDeleteTarget(book)}><Trash2 /></Button>
+                  </ShelfButton>
+                  <ShelfButton className="card-menu" type="button" title={t("removeBook", { title: book.title })} aria-label={t("removeBook", { title: book.title })} onClick={() => setDeleteTarget(book)}><Trash2 /></ShelfButton>
                 </Card>
               );
             })}

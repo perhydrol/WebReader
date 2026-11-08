@@ -24,6 +24,7 @@ export function normalizePreferences(value: unknown): ReaderPreferences {
 
   return {
     version: 2,
+    followSystemTheme: typeof stored.followSystemTheme === "boolean" ? stored.followSystemTheme : true,
     theme: THEMES.has(String(stored.theme))
       ? stored.theme as ReaderPreferences["theme"]
       : DEFAULT_PREFERENCES.theme,

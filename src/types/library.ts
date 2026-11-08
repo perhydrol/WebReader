@@ -29,6 +29,7 @@ export interface BookRecord {
 
 export interface ReaderPreferences {
   version: 2;
+  followSystemTheme?: boolean;
   theme: ReaderTheme;
   fontSizePercent: number;
   fontFamily: ReaderFontFamily;
@@ -39,6 +40,7 @@ export interface ReaderPreferences {
 
 export const DEFAULT_PREFERENCES: ReaderPreferences = {
   version: 2,
+  followSystemTheme: true,
   theme: "paper",
   fontSizePercent: 100,
   fontFamily: "publisher",

@@ -75,3 +75,5 @@ Only use books you have the right to read. WebReader does not implement or circu
 MIT. Third-party packages remain under their respective licenses.
 
 The interface uses a locally bundled Konsta iOS theme. TXT has a floating toolbar that hides after idle time and returns on a central single tap or the keyboard-accessible reveal action. Text selection, active pointers, panels and toolbar focus keep controls visible. Settings, contents and search overlay a stable reading viewport. iPhone PWA performance and keyboard behavior still require device acceptance.
+
+Reader appearance follows the system by default. Choosing one of the four manual backgrounds opts out; select System appearance in reader settings to follow it again.

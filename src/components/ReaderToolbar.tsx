@@ -22,6 +22,6 @@ export function ReaderToolbar({ children, hidden, panelOpen, onLock }: {
     onPointerDown={() => onLock("toolbar-pointer", true)}
     onPointerUp={() => onLock("toolbar-pointer", false)}
     onPointerCancel={() => onLock("toolbar-pointer", false)}>
-    <Toolbar><ToolbarPane className="reader-toolbar-pane">{children}</ToolbarPane></Toolbar>
+    <Toolbar top><ToolbarPane className="reader-toolbar-pane">{children}</ToolbarPane></Toolbar>
   </header>;
 }

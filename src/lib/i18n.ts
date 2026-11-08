@@ -2,6 +2,7 @@ export type Language = "zh" | "en";
 export type TranslationVariables = Record<string, string | number>;
 
 const zh = {
+  systemTheme: "跟随系统",
   appSettings: "应用设置",
   continueReading: "继续阅读",
   storageRisk: "图书保存在此浏览器中。清除网站数据可能丢失书库，安装 PWA 或允许持久存储不等于备份。",
@@ -153,6 +154,7 @@ const zh = {
 } as const;
 
 const en: Record<keyof typeof zh, string> = {
+  systemTheme: "System appearance",
   appSettings: "App settings",
   continueReading: "Continue reading",
   storageRisk: "Books stay in this browser. Clearing site data may erase your library. PWA installation and persistent storage permission are not backups.",

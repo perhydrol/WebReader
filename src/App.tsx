@@ -1,4 +1,4 @@
-import { type ReactNode, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type ReactNode, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen, ChevronLeft, ChevronRight,
   ListTree, MessageSquare, Rows3, Search, Settings2, Trash2, X,
@@ -6,6 +6,7 @@ import {
 import "./App.css";
 import { Button, Dialog, Segmented, SegmentedButton } from "konsta/react";
 import { flushSync } from "react-dom";
+import { ShelfButton } from "./components/ShelfButton";
 import { LibraryView } from "./components/LibraryView";
 import { ReaderSheet } from "./components/ReaderSheet";
 import { ReaderToolbar } from "./components/ReaderToolbar";
@@ -136,7 +137,7 @@ function FeedbackDialog({ language, onClose, onSuccess }: {
     <ModalFrame className="feedback-dialog" labelledBy="feedback-title" locked={sending} onClose={onClose}>
         <div className="dialog-heading">
           <div className="dialog-icon feedback-icon"><MessageSquare /></div>
-          <Button className="icon-button" type="button" onClick={onClose} disabled={sending} aria-label={t("cancel")}><X /></Button>
+          <ShelfButton className="icon-button" type="button" onClick={onClose} disabled={sending} aria-label={t("cancel")}><X /></ShelfButton>
         </div>
         <h2 id="feedback-title">{t("feedbackTitle")}</h2>
         <p>{t("feedbackHint")}</p>
@@ -154,8 +155,8 @@ function FeedbackDialog({ language, onClose, onSuccess }: {
           <span>{t("feedbackCounter", { count: text.length, max: MAX_FEEDBACK_LENGTH })}</span>
         </div>
         <div className="dialog-actions">
-          <Button className="secondary-button" type="button" onClick={onClose} disabled={sending}>{t("cancel")}</Button>
-          <Button className="primary-button" type="button" onClick={() => void send()} disabled={sending || !text.trim()}>{sending ? t("sending") : t("send")}</Button>
+          <ShelfButton className="secondary-button" type="button" onClick={onClose} disabled={sending}>{t("cancel")}</ShelfButton>
+          <ShelfButton className="primary-button" type="button" onClick={() => void send()} disabled={sending || !text.trim()}>{sending ? t("sending") : t("send")}</ShelfButton>
         </div>
     </ModalFrame>
   );
@@ -188,8 +189,8 @@ function DeleteDialog({ book, t, onClose, onConfirm }: {
       <p>{t("removeDescription", { title: book.title })}</p>
       {failed && <p className="dialog-error" role="alert">{t("removeFailed")}</p>}
       <div className="dialog-actions">
-        <Button data-autofocus className="secondary-button" type="button" onClick={onClose} disabled={removing}>{t("cancel")}</Button>
-        <Button className="danger-button" type="button" onClick={() => void confirm()} disabled={removing}>{removing ? t("removing") : t("remove")}</Button>
+        <ShelfButton data-autofocus className="secondary-button" type="button" onClick={onClose} disabled={removing}>{t("cancel")}</ShelfButton>
+        <ShelfButton className="danger-button" type="button" onClick={() => void confirm()} disabled={removing}>{removing ? t("removing") : t("remove")}</ShelfButton>
       </div>
     </ModalFrame>
   );
@@ -202,6 +203,16 @@ export default function App() {
   const [activeBook, setActiveBook] = useState<BookRecord>();
   const [activeFile, setActiveFile] = useState<Blob>();
   const [preferences, setPreferences] = useState<ReaderPreferences>(DEFAULT_PREFERENCES);
+  const [systemDark, setSystemDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
+  useEffect(() => {
+    const media = matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemDark(media.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  const readerPreferences = useMemo<ReaderPreferences>(() => ({ ...preferences,
+    theme: preferences.followSystemTheme !== false ? systemDark ? "night" : "white" : preferences.theme }), [preferences, systemDark]);
+
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [message, setMessage] = useState<string>();
@@ -471,15 +482,15 @@ export default function App() {
   }, [refreshBooks]);
 
   const languageControl = (
-    <div className="language-switch" role="group" aria-label={t("language")}>
-      <button type="button" className={language === "zh" ? "active" : ""} aria-pressed={language === "zh"} onClick={() => setLanguage("zh")}>中</button>
-      <button type="button" className={language === "en" ? "active" : ""} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>EN</button>
-    </div>
+    <Segmented strong className="app-language-switch" role="group" aria-label={t("language")}>
+      <SegmentedButton type="button" active={language === "zh"} aria-pressed={language === "zh"} onClick={() => setLanguage("zh")}>中</SegmentedButton>
+      <SegmentedButton type="button" active={language === "en"} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>EN</SegmentedButton>
+    </Segmented>
   );
 
   if (activeBook && activeFile) {
     return (
-      <main className={`reader-shell theme-${preferences.theme} ${preferences.theme === "night" ? "dark" : ""} ${readerPanel ? "panel-open" : ""}`}>
+      <main className={`reader-shell theme-${readerPreferences.theme} ${readerPreferences.theme === "night" ? "dark" : ""} ${readerPanel ? "panel-open" : ""}`}>
         <button className="chrome-reveal" type="button" onClick={chrome.show}>{language === "zh" ? "显示阅读工具栏" : "Show reading toolbar"}</button>
         <ReaderToolbar hidden={chrome.hidden} panelOpen={Boolean(readerPanel)} onLock={chrome.lock}>
           <div className="reader-leading-controls">
@@ -559,7 +570,7 @@ export default function App() {
                   readingProfile={activeBook.readingProfile}
                   file={activeFile}
                   locator={activeBook.locator}
-                  preferences={preferences}
+                  preferences={readerPreferences}
                   onProgress={handleProgress}
                   onOutline={handleOutline}
                   onCapabilities={handleCapabilities}
@@ -575,7 +586,7 @@ export default function App() {
                   readingProfile={activeBook.readingProfile}
                   file={activeFile}
                   locator={activeBook.locator}
-                  preferences={preferences}
+                  preferences={readerPreferences}
                   onProgress={handleProgress}
                   onOutline={handleOutline}
                   onCapabilities={handleCapabilities}
@@ -591,7 +602,7 @@ export default function App() {
                   readingProfile={activeBook.readingProfile}
                   file={activeFile}
                   locator={activeBook.locator}
-                  preferences={preferences}
+                  preferences={readerPreferences}
                   onProgress={handleProgress}
                   onOutline={handleOutline}
                   onCapabilities={handleCapabilities}
@@ -611,7 +622,8 @@ export default function App() {
           </section>
           {readerPanel === "settings" && (
             <ReaderSheet label={t("readerSettings")} onClose={() => setReaderPanel(undefined)}>
-            {capabilities.readingProfile && (
+            <ReaderSettings
+              readingModeControl={capabilities.readingProfile && (
               <Segmented strong className="reading-mode-switch" role="group" aria-label={t("readingMode")}>
                 <SegmentedButton
                   type="button"
@@ -627,9 +639,8 @@ export default function App() {
                 ><Rows3 /><span>{t("scrollMode")}</span></SegmentedButton>
               </Segmented>
             )}
-            <ReaderSettings
               language={language}
-              preferences={preferences}
+              preferences={readerPreferences}
               typography={capabilities.typography}
               publisherFont={capabilities.publisherFont}
               onLanguageChange={setLanguage}

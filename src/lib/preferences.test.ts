@@ -7,6 +7,11 @@ describe("reader preference migration", () => {
     expect(normalizePreferences(undefined)).toEqual(DEFAULT_PREFERENCES);
   });
 
+  it("defaults existing preferences to system appearance and preserves an explicit override", () => {
+    expect(normalizePreferences({ theme: "paper" }).followSystemTheme).toBe(true);
+    expect(normalizePreferences({ theme: "paper", followSystemTheme: false }).followSystemTheme).toBe(false);
+  });
+
   it("migrates legacy scale and preserves supported values", () => {
     expect(normalizePreferences({ theme: "night", fontScale: 1.24, lineHeight: 1.8 })).toEqual({
       ...DEFAULT_PREFERENCES,

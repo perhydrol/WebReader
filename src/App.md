@@ -13,3 +13,5 @@
 The shelf remains usable if a reader fails; the root error boundary provides a local recovery path. See `AGENTS.md` for the product boundary and persistence invariants.
 
 Reader chrome and modal sheet behavior are delegated to ReaderToolbar, ReaderSheet and useReaderChrome. App retains storage and reader identity. TXT content emits session-scoped UI interactions; no panel or chrome state changes the reader key or viewport. LibraryView owns shelf presentation and local settings navigation.
+
+The reader follows system appearance by default. App resolves followSystemTheme to a concrete night/white theme without changing reader identity; explicit manual theme selection opts out. System media listeners are removed on unmount.

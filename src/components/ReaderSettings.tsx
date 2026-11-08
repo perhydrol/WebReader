@@ -2,8 +2,10 @@ import { Button, Range, Segmented, SegmentedButton } from "konsta/react";
 import { Minus, Plus, Settings2, X } from "lucide-react";
 import type { Language, TranslationKey, TranslationVariables } from "../lib/i18n";
 import type { ReaderPreferences } from "../types/library";
+import type { ReactNode } from "react";
 
 interface ReaderSettingsProps {
+  readingModeControl?: ReactNode;
   language: Language;
   preferences: ReaderPreferences;
   onLanguageChange: (language: Language) => void;
@@ -36,7 +38,7 @@ const widths: Array<{ value: ReaderPreferences["contentWidth"]; label: Translati
   { value: "wide", label: "wide" },
 ];
 
-export function ReaderSettings({ language, preferences, onLanguageChange, onChange, onClose, typography, publisherFont, t }: ReaderSettingsProps) {
+export function ReaderSettings({ language, preferences, onLanguageChange, onChange, onClose, typography, publisherFont, t, readingModeControl }: ReaderSettingsProps) {
   const visibleFontOptions = publisherFont ? fontOptions : fontOptions.filter((option) => option.value !== "publisher");
   const selectedFont = publisherFont || preferences.fontFamily !== "publisher" ? preferences.fontFamily : "serif";
   const update = <Key extends keyof ReaderPreferences>(key: Key, value: ReaderPreferences[Key]) => {
@@ -50,6 +52,8 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
         <div><Settings2 /><strong>{t("readerSettings")}</strong></div>
         <Button clear className="icon-button" type="button" onClick={onClose} aria-label={t("closeSettings")}><X /></Button>
       </header>
+
+      {readingModeControl && <section className="setting-group mode-setting-group">{readingModeControl}</section>}
 
       <section className="setting-group">
         <span className="setting-label">{t("language")}</span>
@@ -68,7 +72,7 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
               <output>{preferences.fontSizePercent}%</output>
               <Button clear className="icon-button" type="button" onClick={() => resize(10)} disabled={preferences.fontSizePercent >= 200} aria-label={t("increaseTextSize")}><Plus /></Button>
             </div>
-            <Range inputId="reader-text-size" min={80} max={200} step={10} value={preferences.fontSizePercent} onChange={(event) => update("fontSizePercent", Number((event.target as HTMLInputElement).value))} />
+            <Range colors={{ valueBgIos: "bg-zinc-700 dark:bg-zinc-300" }} inputId="reader-text-size" min={80} max={200} step={10} value={preferences.fontSizePercent} onChange={(event) => update("fontSizePercent", Number((event.target as HTMLInputElement).value))} />
           </section>
 
           <label className="setting-group">
@@ -100,8 +104,10 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
       <section className="setting-group">
         <span className="setting-label">{t("background")}</span>
         <div className="theme-options">
+          <Button clear className="theme-option system-theme-option" aria-pressed={preferences.followSystemTheme !== false}
+            onClick={() => onChange({ ...preferences, followSystemTheme: true })}>{t("systemTheme")}</Button>
           {themes.map((theme) => (
-            <Button clear key={theme.value} type="button" className={`theme-option theme-swatch-${theme.value} ${preferences.theme === theme.value ? "active" : ""}`} aria-pressed={preferences.theme === theme.value} onClick={() => update("theme", theme.value)}>
+            <Button clear key={theme.value} type="button" className={`theme-option theme-swatch-${theme.value}`} aria-pressed={preferences.followSystemTheme === false && preferences.theme === theme.value} onClick={() => onChange({ ...preferences, theme: theme.value, followSystemTheme: false })}>
               <i aria-hidden="true" /><span>{t(theme.label)}</span>
             </Button>
           ))}

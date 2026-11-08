@@ -31,4 +31,6 @@ See [Designing Websites for iPhone X](https://webkit.org/blog/7929/designing-web
 
 Legacy rules live in the base layer so Konsta utilities can apply their published appearance. Unlayered layout rules govern: the invariant reading viewport, floating chrome, sheet visual-viewport rectangle, and dialog centering. Sheet translation is neutralized because its bottom position already places it in the visible rectangle.
 
-The user-approved neutral shelf palette also lives in this file: shared action colors, shadows and rounding follow system appearance; night reader icons use a pale foreground. It overrides saturated component defaults for shelf actions while retaining destructive-action red.
+Neutral shelf actions opt into ShelfButton, which uses public Konsta colors and rounded props. No broad .k-button appearance override applies to segmented controls. This stylesheet retains local layout, neutral notice colors, night reader icon foregrounds and destructive-action red.
+
+Settings keep their title and close action above the mode control, within one scroll owner. Search uses three bounded columns for field, clear and submit. Shelf notices, language selections and reader selection rings use neutral colors. Continue-reading headings retain separation from their action; book metadata shares one centered column.
