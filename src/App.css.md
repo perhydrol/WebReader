@@ -14,7 +14,7 @@
 ## Safe-area contract
 
 - `:root` publishes `--safe-area-top`, `--safe-area-right`, `--safe-area-bottom`, and `--safe-area-left` from `env(safe-area-inset-*, 0px)`. The browser reports the sizes; the stylesheet does not detect device models or hard-code status-bar heights.
-- The reader shell is the single reader-level consumer. It uses border-box `height: 100vh` with a `100dvh` override and one four-edge safe padding. The 58px toolbar row and `minmax(0, 1fr)` workspace remain unchanged, so the workspace height equals viewport height minus both vertical insets minus 58px. Toolbar, workspace, panels, and reading stages add no safe padding of their own.
+- The reader shell is the single reader-level consumer. It uses border-box `height: 100vh` with a `100dvh` override and one four-edge safe padding. A single `minmax(0, 1fr)` workspace fills the safe rectangle. The floating bottom toolbar never changes it. Sheet geometry consumes the same safe rectangle independently as a fixed overlay; reading stages add no safe padding.
 - The shelf applies its own insets. In the two-column desktop layout the left column consumes the left inset and the main column consumes the right inset; the `<= 760px` row layout consumes both horizontal insets in the top bar and the content column. Heights use `100vh` with a `100dvh` override. Do not add the top inset to both the mobile top bar and the content below it.
 - Fixed overlays cannot inherit shell padding. `.dialog-backdrop` still covers the viewport and pads its content by all four insets; `.dialog` scrolls internally when tall. `.page-status` lifts by the bottom inset.
 - Reader theme backgrounds paint the padded reader strips; the shelf and recovery surfaces use their own backgrounds. Safe-area padding is never repeated on individual stages or panels.
@@ -26,3 +26,9 @@ Dynamic viewport units track Safari's collapsing toolbar. `100dvh` is a viewport
 The automated suite overrides the custom properties with synthetic values. It verifies layout rules only and does not prove that Safari reports the same numbers on a device.
 
 See [Designing Websites for iPhone X](https://webkit.org/blog/7929/designing-websites-for-iphone-x/) and [WebKit dynamic viewport units](https://webkit.org/blog/12445/new-webkit-features-in-safari-15-4/).
+
+## Component layers
+
+Legacy rules live in the base layer so Konsta utilities can apply their published appearance. Unlayered layout rules govern: the invariant reading viewport, floating chrome, sheet visual-viewport rectangle, and dialog centering. Sheet translation is neutralized because its bottom position already places it in the visible rectangle.
+
+The user-approved neutral shelf palette also lives in this file: shared action colors, shadows and rounding follow system appearance; night reader icons use a pale foreground. It overrides saturated component defaults for shelf actions while retaining destructive-action red.

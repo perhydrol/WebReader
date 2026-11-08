@@ -10,6 +10,7 @@ import {
 } from "../lib/textDom";
 import { TEXT_CONTENT_WIDTH } from "../lib/textDisplay";
 import type { TextViewHandle, TextViewProps } from "./textViewTypes";
+import { bindReaderContentEvents } from "../lib/readerContentEvents";
 
 function caretAtPoint(document: Document, x: number, y: number): { node: Node; offset: number } | undefined {
   if (typeof document.caretRangeFromPoint === "function") {
@@ -41,7 +42,19 @@ function visibleSourceOffset(scroller: HTMLElement, model: TextViewProps["model"
   for (const element of sourceElements(scroller)) {
     const bounds = sourceBounds(element);
     const elementRect = element.getBoundingClientRect();
-    if (bounds && elementRect.height > 0 && elementRect.bottom > rect.top) return bounds.start;
+    if (bounds && elementRect.height > 0 && elementRect.bottom > rect.top + topInset) {
+      // Hit testing ignores inert content under a sheet. Ranges still expose its geometry.
+      let low = 0;
+      let high = bounds.end - bounds.start;
+      while (low < high) {
+        const middle = Math.floor((low + high) / 2);
+        const charRect = rangeRectForLocalOffset(element, middle);
+        if (!charRect) return fallback;
+        if (charRect.bottom <= rect.top + topInset + 1) low = middle + 1;
+        else high = middle;
+      }
+      return clampToVisibleOffset(model, bounds.start + low);
+    }
   }
   return fallback;
 }
@@ -61,7 +74,7 @@ function highlightedText(text: string, fragment: TextFragment, match?: { start: 
 }
 
 export const TextScrollView = forwardRef<TextViewHandle, TextViewProps>(function TextScrollView({
-  model, preferences, initialOffset, activeMatch, layoutRevision, onOffset, onReady,
+  model, preferences, initialOffset, activeMatch, layoutRevision, onOffset, onReady, onContentInteraction,
 }, ref) {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -74,8 +87,15 @@ export const TextScrollView = forwardRef<TextViewHandle, TextViewProps>(function
   const scrollFrameRef = useRef(0);
   const onOffsetRef = useRef(onOffset);
   const onReadyRef = useRef(onReady);
+  const interactionRef = useRef(onContentInteraction);
+  interactionRef.current = onContentInteraction;
   onOffsetRef.current = onOffset;
   onReadyRef.current = onReady;
+
+  useEffect(() => {
+    if (!scroller) return;
+    return bindReaderContentEvents(scroller, (event) => interactionRef.current?.(event), () => scroller.getBoundingClientRect());
+  }, [scroller]);
 
   useEffect(() => {
     mountedRef.current = true;

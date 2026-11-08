@@ -1,3 +1,4 @@
+import { Button, ListInput } from "konsta/react";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MAX_SEARCH_QUERY_LENGTH, MAX_SEARCH_RESULTS } from "../lib/readerSearch";
@@ -8,13 +9,12 @@ interface ReaderSearchProps {
   controllerRef: React.RefObject<ReaderController | null>;
   onClose: () => void;
   t: (key: TranslationKey, variables?: TranslationVariables) => string;
-  triggerRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
-export function ReaderSearch({ controllerRef, onClose, t, triggerRef }: ReaderSearchProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+export function ReaderSearch({ controllerRef, onClose, t }: ReaderSearchProps) {
   const abortRef = useRef<AbortController | undefined>(undefined);
   const generationRef = useRef(0);
+  const navigatedRef = useRef(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ReaderSearchResult[]>([]);
   const [progress, setProgress] = useState(0);
@@ -23,17 +23,16 @@ export function ReaderSearch({ controllerRef, onClose, t, triggerRef }: ReaderSe
   const [failed, setFailed] = useState(false);
   const [searched, setSearched] = useState(false);
 
+
   useEffect(() => {
-    const trigger = triggerRef?.current;
     const controller = controllerRef.current;
-    inputRef.current?.focus();
+    controller?.clearSearch?.();
     return () => {
       generationRef.current += 1;
       abortRef.current?.abort();
-      controller?.clearSearch?.();
-      if (trigger?.isConnected) trigger.focus();
+      if (!navigatedRef.current) controller?.clearSearch?.();
     };
-  }, [controllerRef, triggerRef]);
+  }, [controllerRef]);
 
   const runSearch = useCallback(async () => {
     const value = query.trim();
@@ -73,23 +72,23 @@ export function ReaderSearch({ controllerRef, onClose, t, triggerRef }: ReaderSe
     <aside className="reader-panel search-panel" aria-label={t("searchBook")}>
       <header className="reader-panel-header">
         <div><Search /><strong>{t("searchBook")}</strong></div>
-        <button className="icon-button" type="button" onClick={onClose} aria-label={t("closeSearch")}><X /></button>
+        <Button clear className="icon-button" type="button" onClick={onClose} aria-label={t("closeSearch")}><X /></Button>
       </header>
       <form className="reader-search-form" role="search" onSubmit={(event) => { event.preventDefault(); void runSearch(); }}>
         <label className="sr-only" htmlFor="reader-search-input">{t("searchBook")}</label>
-        <input
-          id="reader-search-input"
-          ref={inputRef}
+        <ListInput
+          inputId="reader-search-input"
           type="search"
           maxLength={MAX_SEARCH_QUERY_LENGTH}
+          autoComplete="off"
           value={query}
           placeholder={t("searchPlaceholder")}
-          autoComplete="off"
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => setQuery((event.target as HTMLInputElement).value.slice(0, MAX_SEARCH_QUERY_LENGTH))}
         />
-        <button className="primary-button" type="submit" disabled={searching || !query.trim()} aria-label={t("searchAction")}>
+        <Button clear type="button" aria-label={t("dismiss")} onClick={() => setQuery("")}><X /></Button>
+        <Button clear className="primary-button" type="submit" disabled={searching || !query.trim()} aria-label={t("searchAction")}>
           {searching ? <LoaderCircle className="spin" /> : <Search />}
-        </button>
+        </Button>
       </form>
       <div className="search-summary" role="status" aria-live="polite">
         {searching
@@ -104,10 +103,10 @@ export function ReaderSearch({ controllerRef, onClose, t, triggerRef }: ReaderSe
       <div className="search-results">
         {!searching && searched && !failed && results.length === 0 && <p className="empty-panel">{t("noSearchResults")}</p>}
         {results.map((result) => (
-          <button className="search-result" type="button" key={result.id} onClick={() => controllerRef.current?.goToSearch?.(result)}>
+          <Button clear className="search-result" type="button" key={result.id} onClick={() => { navigatedRef.current = true; controllerRef.current?.goToSearch?.(result); onClose(); }}>
             {result.label && <strong>{result.label}</strong>}
             <span>{result.excerpt.pre}<mark>{result.excerpt.match}</mark>{result.excerpt.post}</span>
-          </button>
+          </Button>
         ))}
       </div>
     </aside>

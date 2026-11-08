@@ -1,3 +1,4 @@
+import { changeReaderMode } from "./readerControls";
 import { expect, test } from "@playwright/test";
 import { isInjectedBrowserMessage, isInjectedBrowserRequest } from "./browserNoise";
 import { syntheticEpub, syntheticPdf } from "./syntheticBooks";
@@ -18,9 +19,9 @@ test("opens a synthetic EPUB and keeps it readable across mode changes", async (
     return renderer?.getContents?.().map((content) => content.doc.body.textContent ?? "").join("\n") ?? "";
   })).toContain("这是 WebReader 自动化测试生成的本地 EPUB");
   await expect(page.getByRole("button", { name: "目录" })).toBeEnabled();
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator("foliate-view")).toBeVisible();
-  await page.getByRole("button", { name: "翻页" }).click();
+  await changeReaderMode(page, "翻页");
   await expect(page.getByText("无法打开此 EPUB 文件。")).toHaveCount(0);
 });
 
@@ -74,10 +75,10 @@ test("opens a synthetic PDF and preserves its page across mode changes", async (
     return context ? context.getImageData(0, 0, 1, 1).data[3] : 0;
   })).toBeGreaterThan(0);
   await expect(page.locator(".page-status")).toHaveText("1 / 1");
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".continuous-pdf-track")).toBeVisible();
   await expect(page.locator(".continuous-pdf-track .pdf-page-surface canvas")).toBeVisible();
-  await page.getByRole("button", { name: "翻页" }).click();
+  await changeReaderMode(page, "翻页");
   await expect(page.locator(".pdf-page-surface")).toBeVisible();
   await expect(page.getByText("无法渲染此 PDF 页面。")).toHaveCount(0);
   expect(browserErrors).toEqual([]);
@@ -132,7 +133,9 @@ test("searches a synthetic EPUB without sending publication text", async ({ page
     const renderer = (view as unknown as { renderer?: { getContents?: () => Array<{ overlayer?: { element?: SVGElement } }> } }).renderer;
     return renderer?.getContents?.().reduce((count, content) => count + (content.overlayer?.element?.childElementCount ?? 0), 0) ?? 0;
   })).toBeGreaterThan(0);
-  await page.getByRole("button", { name: "关闭书内搜索" }).click();
+  await expect(page.locator(".search-panel")).toHaveCount(0);
+  await page.getByRole("button", { name: "目录", exact: true }).click();
+  await page.locator(".outline-link").first().click();
   await expect.poll(() => page.locator("foliate-view").evaluate((view) => {
     const renderer = (view as unknown as { renderer?: { getContents?: () => Array<{ overlayer?: { element?: SVGElement } }> } }).renderer;
     return renderer?.getContents?.().reduce((count, content) => count + (content.overlayer?.element?.childElementCount ?? 0), 0) ?? 0;
@@ -145,7 +148,7 @@ test("searches PDF text and highlights its source region on the Canvas", async (
   await page.locator('input[type="file"]').setInputFiles({
     name: "searchable.pdf",
     mimeType: "application/pdf",
-    buffer: syntheticPdf(),
+    buffer: syntheticPdf(true),
   });
   await page.getByRole("button", { name: "打开《searchable》" }).click();
   await expect(page.getByRole("button", { name: "书内搜索" })).toBeEnabled();
@@ -155,6 +158,8 @@ test("searches PDF text and highlights its source region on the Canvas", async (
   await expect(page.locator(".search-result")).toHaveCount(1);
   await page.locator(".search-result").click();
   await expect(page.locator(".pdf-source-highlight")).toBeVisible();
-  await page.getByRole("button", { name: "关闭书内搜索" }).click();
+  await expect(page.locator(".search-panel")).toHaveCount(0);
+  await page.getByRole("button", { name: "目录", exact: true }).click();
+  await page.locator(".outline-link").first().click();
   await expect(page.locator(".pdf-source-highlight")).toHaveCount(0);
 });

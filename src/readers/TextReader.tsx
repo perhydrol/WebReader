@@ -13,8 +13,10 @@ import type {
 import { TextPagedView } from "./TextPagedView";
 import { TextScrollView } from "./TextScrollView";
 import type { TextMatch, TextViewHandle } from "./textViewTypes";
+import type { ReaderContentInteraction } from "../lib/readerContentEvents";
 
 interface TextReaderProps {
+  onContentInteraction?: (event: ReaderContentInteraction) => void;
   layoutRevision?: string;
   readingProfile: ReadingProfile;
   file: Blob;
@@ -31,7 +33,7 @@ interface TextReaderProps {
 
 export function TextReader({
   layoutRevision, readingProfile, file, locator, preferences, onProgress, onOutline,
-  onCapabilities, onCurrentTarget, onKeyDown, navigationRef, t,
+  onCapabilities, onCurrentTarget, onKeyDown, navigationRef, t, onContentInteraction,
 }: TextReaderProps) {
   const scrollViewRef = useRef<TextViewHandle>(null);
   const pagedViewRef = useRef<TextViewHandle>(null);
@@ -215,6 +217,7 @@ export function TextReader({
         <p className="text-status">{t("emptyText")}</p>
       ) : paginated ? (
         <TextPagedView
+          onContentInteraction={onContentInteraction}
           ref={pagedViewRef}
           model={model}
           preferences={preferences}
@@ -226,6 +229,7 @@ export function TextReader({
         />
       ) : (
         <TextScrollView
+          onContentInteraction={onContentInteraction}
           ref={scrollViewRef}
           model={model}
           preferences={preferences}

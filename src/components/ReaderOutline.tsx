@@ -1,5 +1,6 @@
+import { Button, List } from "konsta/react";
 import { ChevronDown, ChevronRight, ListTree, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { TranslationKey, TranslationVariables } from "../lib/i18n";
 import type { ReaderOutlineItem } from "../types/reader";
 
@@ -10,7 +11,6 @@ interface ReaderOutlineProps {
   onNavigate: (target: string) => void;
   onClose: () => void;
   t: (key: TranslationKey, variables?: TranslationVariables) => string;
-  triggerRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutlineProps, "items" | "currentTarget" | "onNavigate" | "t">) {
@@ -25,7 +25,7 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
   };
 
   return (
-    <ul className="outline-list">
+    <List className="outline-list" nested>
       {items.map((item) => {
         const hasChildren = item.children.length > 0;
         const isCollapsed = collapsed.has(item.id);
@@ -34,7 +34,7 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
           <li key={item.id}>
             <div className="outline-row">
               {hasChildren ? (
-                <button
+                <Button clear
                   className="outline-disclosure"
                   type="button"
                   onClick={() => toggle(item.id)}
@@ -42,9 +42,9 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
                   aria-label={t(isCollapsed ? "expandSection" : "collapseSection", { title: item.label })}
                 >
                   {isCollapsed ? <ChevronRight /> : <ChevronDown />}
-                </button>
+                </Button>
               ) : <span className="outline-spacer" />}
-              <button
+              <Button clear
                 className={`outline-link ${current ? "current" : ""}`}
                 type="button"
                 onClick={() => item.target && onNavigate(item.target)}
@@ -52,7 +52,7 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
                 aria-current={current ? "location" : undefined}
               >
                 {item.label}
-              </button>
+              </Button>
             </div>
             {hasChildren && !isCollapsed && (
               <OutlineBranch items={item.children} currentTarget={currentTarget} onNavigate={onNavigate} t={t} />
@@ -60,23 +60,17 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
           </li>
         );
       })}
-    </ul>
+    </List>
   );
 }
 
-export function ReaderOutline({ items, currentTarget, automatic, onNavigate, onClose, t, triggerRef }: ReaderOutlineProps) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const trigger = triggerRef?.current;
-    closeRef.current?.focus();
-    return () => { if (trigger?.isConnected) trigger.focus(); };
-  }, [triggerRef]);
+export function ReaderOutline({ items, currentTarget, automatic, onNavigate, onClose, t }: ReaderOutlineProps) {
 
   return (
     <aside className="reader-panel outline-panel" aria-label={t("tableOfContents")}>
       <header className="reader-panel-header">
         <div><ListTree /><strong>{t("tableOfContents")}</strong></div>
-        <button ref={closeRef} className="icon-button" type="button" onClick={onClose} aria-label={t("closeTableOfContents")}><X /></button>
+        <Button clear className="icon-button" type="button" onClick={onClose} aria-label={t("closeTableOfContents")}><X /></Button>
       </header>
       {automatic && items.length > 0 && <p className="panel-note">{t("automaticOutline")}</p>}
       <nav className="outline-nav">

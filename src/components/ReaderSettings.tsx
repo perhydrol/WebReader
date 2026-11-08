@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { Button, Range, Segmented, SegmentedButton } from "konsta/react";
 import { Minus, Plus, Settings2, X } from "lucide-react";
 import type { Language, TranslationKey, TranslationVariables } from "../lib/i18n";
 import type { ReaderPreferences } from "../types/library";
@@ -11,7 +11,6 @@ interface ReaderSettingsProps {
   onClose: () => void;
   typography: boolean;
   publisherFont: boolean;
-  triggerRef?: React.RefObject<HTMLButtonElement | null>;
   t: (key: TranslationKey, variables?: TranslationVariables) => string;
 }
 
@@ -37,13 +36,7 @@ const widths: Array<{ value: ReaderPreferences["contentWidth"]; label: Translati
   { value: "wide", label: "wide" },
 ];
 
-export function ReaderSettings({ language, preferences, onLanguageChange, onChange, onClose, typography, publisherFont, triggerRef, t }: ReaderSettingsProps) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const trigger = triggerRef?.current;
-    closeRef.current?.focus();
-    return () => { if (trigger?.isConnected) trigger.focus(); };
-  }, [triggerRef]);
+export function ReaderSettings({ language, preferences, onLanguageChange, onChange, onClose, typography, publisherFont, t }: ReaderSettingsProps) {
   const visibleFontOptions = publisherFont ? fontOptions : fontOptions.filter((option) => option.value !== "publisher");
   const selectedFont = publisherFont || preferences.fontFamily !== "publisher" ? preferences.fontFamily : "serif";
   const update = <Key extends keyof ReaderPreferences>(key: Key, value: ReaderPreferences[Key]) => {
@@ -55,27 +48,27 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
     <aside className="reader-panel settings-panel" aria-label={t("readerSettings")}>
       <header className="reader-panel-header">
         <div><Settings2 /><strong>{t("readerSettings")}</strong></div>
-        <button ref={closeRef} className="icon-button" type="button" onClick={onClose} aria-label={t("closeSettings")}><X /></button>
+        <Button clear className="icon-button" type="button" onClick={onClose} aria-label={t("closeSettings")}><X /></Button>
       </header>
 
       <section className="setting-group">
         <span className="setting-label">{t("language")}</span>
-        <div className="segmented-control" role="group" aria-label={t("language")}>
-          <button type="button" className={language === "zh" ? "active" : ""} aria-pressed={language === "zh"} onClick={() => onLanguageChange("zh")}>中</button>
-          <button type="button" className={language === "en" ? "active" : ""} aria-pressed={language === "en"} onClick={() => onLanguageChange("en")}>EN</button>
-        </div>
+        <Segmented strong role="group" aria-label={t("language")}>
+          <SegmentedButton type="button" className={language === "zh" ? "active" : ""} active={language === "zh"} aria-pressed={language === "zh"} onClick={() => onLanguageChange("zh")}>中</SegmentedButton>
+          <SegmentedButton type="button" className={language === "en" ? "active" : ""} active={language === "en"} aria-pressed={language === "en"} onClick={() => onLanguageChange("en")}>EN</SegmentedButton>
+        </Segmented>
       </section>
 
       {typography && (
         <>
           <section className="setting-group">
-            <span className="setting-label">{t("textSize")}</span>
+            <label className="setting-label" htmlFor="reader-text-size">{t("textSize")}</label>
             <div className="font-size-control">
-              <button className="icon-button" type="button" onClick={() => resize(-10)} disabled={preferences.fontSizePercent <= 80} aria-label={t("decreaseTextSize")}><Minus /></button>
+              <Button clear className="icon-button" type="button" onClick={() => resize(-10)} disabled={preferences.fontSizePercent <= 80} aria-label={t("decreaseTextSize")}><Minus /></Button>
               <output>{preferences.fontSizePercent}%</output>
-              <button className="icon-button" type="button" onClick={() => resize(10)} disabled={preferences.fontSizePercent >= 200} aria-label={t("increaseTextSize")}><Plus /></button>
+              <Button clear className="icon-button" type="button" onClick={() => resize(10)} disabled={preferences.fontSizePercent >= 200} aria-label={t("increaseTextSize")}><Plus /></Button>
             </div>
-            <input aria-label={t("textSize")} type="range" min="80" max="200" step="10" value={preferences.fontSizePercent} onChange={(event) => update("fontSizePercent", Number(event.target.value))} />
+            <Range inputId="reader-text-size" min={80} max={200} step={10} value={preferences.fontSizePercent} onChange={(event) => update("fontSizePercent", Number((event.target as HTMLInputElement).value))} />
           </section>
 
           <label className="setting-group">
@@ -87,19 +80,19 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
 
           <section className="setting-group">
             <span className="setting-label">{t("lineHeight")}</span>
-            <div className="segmented-control">
+            <Segmented strong>
               {lineOptions.map((option) => (
-                <button key={option.value} type="button" className={preferences.lineHeight === option.value ? "active" : ""} aria-pressed={preferences.lineHeight === option.value} onClick={() => update("lineHeight", option.value)}>{t(option.label)}</button>
+                <SegmentedButton key={option.value} type="button" className={preferences.lineHeight === option.value ? "active" : ""} active={preferences.lineHeight === option.value} aria-pressed={preferences.lineHeight === option.value} onClick={() => update("lineHeight", option.value)}>{t(option.label)}</SegmentedButton>
               ))}
-            </div>
+            </Segmented>
           </section>
 
           <section className="setting-group">
             <span className="setting-label">{t("paragraphIndent")}</span>
-            <div className="segmented-control">
-              <button type="button" className={preferences.paragraphIndent === 0 ? "active" : ""} aria-pressed={preferences.paragraphIndent === 0} onClick={() => update("paragraphIndent", 0)}>{t("noIndent")}</button>
-              <button type="button" className={preferences.paragraphIndent === 2 ? "active" : ""} aria-pressed={preferences.paragraphIndent === 2} onClick={() => update("paragraphIndent", 2)}>{t("twoCharacterIndent")}</button>
-            </div>
+            <Segmented strong>
+              <SegmentedButton type="button" className={preferences.paragraphIndent === 0 ? "active" : ""} active={preferences.paragraphIndent === 0} aria-pressed={preferences.paragraphIndent === 0} onClick={() => update("paragraphIndent", 0)}>{t("noIndent")}</SegmentedButton>
+              <SegmentedButton type="button" className={preferences.paragraphIndent === 2 ? "active" : ""} active={preferences.paragraphIndent === 2} aria-pressed={preferences.paragraphIndent === 2} onClick={() => update("paragraphIndent", 2)}>{t("twoCharacterIndent")}</SegmentedButton>
+            </Segmented>
           </section>
         </>
       )}
@@ -108,9 +101,9 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
         <span className="setting-label">{t("background")}</span>
         <div className="theme-options">
           {themes.map((theme) => (
-            <button key={theme.value} type="button" className={`theme-option theme-swatch-${theme.value} ${preferences.theme === theme.value ? "active" : ""}`} aria-pressed={preferences.theme === theme.value} onClick={() => update("theme", theme.value)}>
+            <Button clear key={theme.value} type="button" className={`theme-option theme-swatch-${theme.value} ${preferences.theme === theme.value ? "active" : ""}`} aria-pressed={preferences.theme === theme.value} onClick={() => update("theme", theme.value)}>
               <i aria-hidden="true" /><span>{t(theme.label)}</span>
-            </button>
+            </Button>
           ))}
         </div>
       </section>
@@ -118,11 +111,11 @@ export function ReaderSettings({ language, preferences, onLanguageChange, onChan
       {typography && (
         <section className="setting-group">
           <span className="setting-label">{t("contentWidth")}</span>
-          <div className="segmented-control">
+          <Segmented strong>
             {widths.map((option) => (
-              <button key={option.value} type="button" className={preferences.contentWidth === option.value ? "active" : ""} aria-pressed={preferences.contentWidth === option.value} onClick={() => update("contentWidth", option.value)}>{t(option.label)}</button>
+              <SegmentedButton key={option.value} type="button" className={preferences.contentWidth === option.value ? "active" : ""} active={preferences.contentWidth === option.value} aria-pressed={preferences.contentWidth === option.value} onClick={() => update("contentWidth", option.value)}>{t(option.label)}</SegmentedButton>
             ))}
-          </div>
+          </Segmented>
         </section>
       )}
 

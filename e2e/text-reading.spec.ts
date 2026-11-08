@@ -1,3 +1,4 @@
+import { changeReaderMode, showReaderToolbar } from "./readerControls";
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { isInjectedBrowserRequest } from "./browserNoise";
@@ -38,6 +39,7 @@ test("imports a synthetic TXT file and restores its paged position after reload"
     .toBeGreaterThan(before);
   const saved = await progressOffset(() => stage.getAttribute("data-source-offset"));
 
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "返回书架" }).click();
   await expect(page.getByRole("button", { name: `打开《${readerName}》` })).toBeVisible();
   await page.reload();
@@ -56,6 +58,7 @@ test("reports empty text and rejects a renamed ZIP before it reaches the shelf",
   await expect(page.getByRole("button", { name: "打开《empty reader》" })).toBeVisible();
   await page.getByRole("button", { name: "打开《empty reader》" }).click();
   await expect(page.getByText("这个文本文件没有可显示的内容。")).toBeVisible();
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "返回书架" }).click();
 
   await input.setInputFiles(invalidEpubFixture);
@@ -98,8 +101,8 @@ test("searches TXT locally, jumps to the match, and clears the highlight", async
   const paginatorFrame = page.frameLocator("foliate-paginator iframe");
   await expect(paginatorFrame.locator(".text-search-highlight")).toHaveText(SEARCH_MARKER);
 
-  await page.getByRole("button", { name: "关闭书内搜索" }).click();
-  await page.getByRole("button", { name: "滚动" }).click();
+  await expect(page.locator(".search-panel")).toHaveCount(0);
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
 
   await page.keyboard.press("Control+f");
@@ -109,6 +112,8 @@ test("searches TXT locally, jumps to the match, and clears the highlight", async
   await expect(page.getByRole("status").filter({ hasText: "找到 1 处" })).toBeVisible();
   await page.locator(".search-result").click();
   await expect(page.locator(".text-search-highlight")).toHaveText(SEARCH_MARKER);
+  await expect(page.locator(".search-panel")).toHaveCount(0);
+  await page.keyboard.press("Control+f");
   await page.getByRole("button", { name: "关闭书内搜索" }).click();
   await expect(page.locator(".text-search-highlight")).toHaveCount(0);
   expect(unexpectedRequests).toEqual([]);

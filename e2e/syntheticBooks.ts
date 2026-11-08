@@ -71,15 +71,19 @@ export function syntheticEpub(): Buffer {
   ]);
 }
 
-export function syntheticPdf(): Buffer {
+export function syntheticPdf(withOutline = false): Buffer {
   const stream = "BT /F1 18 Tf 72 720 Td (Synthetic WebReader PDF) Tj ET";
   const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
+    `<< /Type /Catalog /Pages 2 0 R ${withOutline ? "/Outlines 6 0 R" : ""} >>`,
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
     "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
     `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`,
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
   ];
+  if (withOutline) objects.push(
+    "<< /Type /Outlines /First 7 0 R /Last 7 0 R /Count 1 >>",
+    "<< /Title (Synthetic chapter) /Parent 6 0 R /Dest [3 0 R /Fit] >>",
+  );
   let output = "%PDF-1.4\n";
   const offsets = [0];
   objects.forEach((object, index) => {

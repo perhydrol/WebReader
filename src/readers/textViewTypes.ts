@@ -1,5 +1,6 @@
 import type { ReaderPreferences } from "../types/library";
 import type { TextSourceModel } from "../lib/textDocument";
+import type { ReaderContentInteraction } from "../lib/readerContentEvents";
 
 export interface TextMatch {
   start: number;
@@ -13,6 +14,7 @@ export interface TextViewHandle {
 }
 
 export interface TextViewProps {
+  onContentInteraction?: (event: ReaderContentInteraction) => void;
   model: TextSourceModel;
   preferences: ReaderPreferences;
   initialOffset: number;

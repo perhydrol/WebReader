@@ -1,3 +1,4 @@
+import { showReaderToolbar } from "./readerControls";
 import { expect, test, type Page } from "@playwright/test";
 import {
   nearLimitMultiParagraphText, nearLimitSingleParagraphText, SEARCH_MARKER, textPayload,
@@ -23,15 +24,25 @@ async function now(page: Page): Promise<number> {
   return page.evaluate(() => performance.now());
 }
 
-async function clickTextButton(page: Page, label: string): Promise<number> {
-  return page.evaluate((text) => {
-    const button = [...document.querySelectorAll("button")]
-      .find((element) => (element.textContent ?? "").trim() === text);
-    if (!button) throw new Error(`Button not found: ${text}`);
-    const start = performance.now();
-    button.click();
-    return start;
-  }, label);
+async function clickModeControl(page: Page, name: "滚动" | "翻页"): Promise<number> {
+  const button = page.getByRole("button", { name, exact: true });
+  await button.evaluate((element, target) => {
+    const stage = document.querySelector(".text-stage");
+    stage?.removeAttribute("data-mode-ready-at");
+    if (stage) {
+      const observer = new MutationObserver(() => {
+        if (stage.getAttribute("data-view-ready") !== target) return;
+        stage.setAttribute("data-mode-ready-at", String(performance.now()));
+        observer.disconnect();
+      });
+      observer.observe(stage, { attributes: true, attributeFilter: ["data-view-ready"] });
+    }
+    element.addEventListener("pointerdown", () => {
+      element.setAttribute("data-input-start", String(performance.now()));
+    }, { once: true, capture: true });
+  }, name === "滚动" ? "article" : "book");
+  await button.click();
+  return Number(await button.getAttribute("data-input-start"));
 }
 
 async function stagePosition(page: Page, selector: string): Promise<Position | null> {
@@ -202,19 +213,24 @@ async function runPerformanceCase(page: Page, input: LargeSyntheticText, label: 
   }
   const jumpEnd = await now(page);
   const jumpLong = await longTasks(page, jumpStart, jumpEnd);
-  await page.getByRole("button", { name: "关闭书内搜索" }).click();
+  await expect(page.locator(".search-panel")).toHaveCount(0);
 
-  const switchStart = await clickTextButton(page, "滚动");
+  const modeFlowStart = await now(page);
+  await showReaderToolbar(page);
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  const switchStart = await clickModeControl(page, "滚动");
   let switchEnd: number;
   if (newImplementation) {
     await waitForViewReady(page, "article");
-    switchEnd = await now(page);
+    switchEnd = Number(await page.locator(".text-stage").getAttribute("data-mode-ready-at"));
     await waitForFirstScreen(page, "scroll");
   } else {
     await waitForFirstScreen(page, "scroll");
     switchEnd = await now(page);
   }
   const switchLong = await longTasks(page, switchStart, switchEnd);
+  await page.getByRole("button", { name: "关闭阅读设置" }).click();
+  const modeFlowEnd = await now(page);
   const scrollMetrics = await domMetrics(page, ".text-stage-scroll");
 
   await page.mouse.move(720, 450);
@@ -234,17 +250,24 @@ async function runPerformanceCase(page: Page, input: LargeSyntheticText, label: 
   const fontLong = await longTasks(page, fontStart, fontEnd);
   const scrollMetricsAfterFont = await domMetrics(page, ".text-stage-scroll");
 
-  const backStart = await clickTextButton(page, "翻页");
+  const backFlowStart = await now(page);
+  await showReaderToolbar(page);
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  const backStart = await clickModeControl(page, "翻页");
   let backEnd: number;
   if (newImplementation) {
     await waitForViewReady(page, "book");
-    backEnd = await now(page);
+    backEnd = Number(await page.locator(".text-stage").getAttribute("data-mode-ready-at"));
     await waitForFirstScreen(page, "paged");
   } else {
     await waitForFirstScreen(page, "paged");
     backEnd = await now(page);
   }
   const backLong = await longTasks(page, backStart, backEnd);
+  expect(switchEnd).toBeGreaterThan(switchStart);
+  expect(backEnd).toBeGreaterThan(backStart);
+  await page.getByRole("button", { name: "关闭阅读设置" }).click();
+  const backFlowEnd = await now(page);
 
   const result = {
     label,
@@ -256,9 +279,11 @@ async function runPerformanceCase(page: Page, input: LargeSyntheticText, label: 
     searchMs: Math.round(searchEnd - searchStart),
     jumpMs: Math.round(jumpEnd - jumpStart),
     modeSwitchMs: Math.round(switchEnd - switchStart),
+    modeFlowMs: Math.round(modeFlowEnd - modeFlowStart),
     wheelMs: Math.round(wheelEnd - wheelStart),
     fontMs: Math.round(fontEnd - fontStart),
     switchBackMs: Math.round(backEnd - backStart),
+    backFlowMs: Math.round(backFlowEnd - backFlowStart),
     pagedMetrics,
     scrollMetrics,
     scrollMetricsAfterFont,

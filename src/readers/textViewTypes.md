@@ -7,3 +7,5 @@
 - `TextMatch` is an absolute source range, never a rendered page or character index.
 
 Keep this file type-only. View-specific behavior belongs in the corresponding component.
+
+The optional onContentInteraction reports local chrome semantics with per-document session IDs. It carries no text and has no persistence role.

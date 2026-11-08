@@ -13,7 +13,7 @@ Production: https://perhydrol.github.io/WebReader/
 - Stable source-block mapping between reflowed text and the authoritative PDF Canvas/TextLayer
 - TXT reading with UTF-8/GB18030 fallback, bounded source fragments, virtualized continuous scrolling, chapter-paginated reading, source-relative progress, and local heading outlines
 - In-book search across EPUB, PDF, and TXT, with local-only queries, bounded results, source-aware navigation, and active-match highlighting
-- Reader-toolbar switch between paged and scrolling modes for reflowable EPUB, PDF, and TXT, remembered per document
+- Reader-settings switch between paged and scrolling modes for reflowable EPUB, PDF, and TXT, remembered per document
 - Chinese/English interface with a locally remembered language choice
 - Reading controls for text size, local font stacks, line spacing, first-line indent, text width, and four background themes
 - Keyboard navigation for page turns, contents, in-book search (`Ctrl/⌘+F`), text size, and panel dismissal
@@ -73,3 +73,5 @@ Only use books you have the right to read. WebReader does not implement or circu
 ## License
 
 MIT. Third-party packages remain under their respective licenses.
+
+The interface uses a locally bundled Konsta iOS theme. TXT has a floating toolbar that hides after idle time and returns on a central single tap or the keyboard-accessible reveal action. Text selection, active pointers, panels and toolbar focus keep controls visible. Settings, contents and search overlay a stable reading viewport. iPhone PWA performance and keyboard behavior still require device acceptance.

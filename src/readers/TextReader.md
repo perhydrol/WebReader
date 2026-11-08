@@ -8,7 +8,9 @@
 - The reading profile selects `TextScrollView` or `TextPagedView`. Both receive the same model, preferences, and current source offset. On a mode switch, the current offset ref is the handoff; no pixel, page, or fragment index is persisted.
 - `activeProfileRef` gates offset/ready callbacks. A late callback from the previous view cannot overwrite the new view's progress.
 - Progress is reported from visible source text, normalized against visible paragraphs, and written through the existing 250 ms debounce. Unmount flushes the pending locator. The stage publishes `data-source-offset` and `data-view-ready` for source-aware checks and the loading boundary.
-- Search uses the complete source string and the bounded `findTextMatches`. `goToSearch` records the active range and asks the current view to restore it. Closing the search panel clears the active range.
+- Search uses the complete source string and the bounded `findTextMatches`. `goToSearch` records the active range and asks the current view to restore it. Dismissing search clears the active range; result navigation closes the panel while retaining the range until the next search or ordinary outline navigation.
 - An empty or whitespace-only document reports the existing empty-text state; decode failure reports `textDecodeFailed`.
 
 App keys this component by book id and blocks legacy Markdown records before it mounts, so a file change always starts from a fresh model.
+
+The optional onContentInteraction callback is forwarded to the active view without affecting source-model creation or view identity.

@@ -1,14 +1,20 @@
 import { type ReactNode, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  BookOpen, ChevronLeft, ChevronRight, FileText, Import, Library,
-  ListTree, MessageSquare, Plus, Rows3, Search, Settings2, Trash2, X,
+  BookOpen, ChevronLeft, ChevronRight,
+  ListTree, MessageSquare, Rows3, Search, Settings2, Trash2, X,
 } from "lucide-react";
 import "./App.css";
+import { Button, Dialog, Segmented, SegmentedButton } from "konsta/react";
+import { flushSync } from "react-dom";
+import { LibraryView } from "./components/LibraryView";
+import { ReaderSheet } from "./components/ReaderSheet";
+import { ReaderToolbar } from "./components/ReaderToolbar";
+import { useReaderChrome } from "./hooks/useReaderChrome";
 import { ReaderOutline } from "./components/ReaderOutline";
 import { ReaderSearch } from "./components/ReaderSearch";
 import { ReaderSettings } from "./components/ReaderSettings";
 import { submitFeedback, MAX_FEEDBACK_LENGTH } from "./lib/feedback";
-import { BookFormatError, detectBookFormat, displayTitle, formatBytes, isLegacyMarkdownRecord } from "./lib/formats";
+import { BookFormatError, detectBookFormat, displayTitle, isLegacyMarkdownRecord } from "./lib/formats";
 import { fingerprintFile } from "./lib/fingerprint";
 import { CoalescingWriteQueue } from "./lib/coalescingWriteQueue";
 import { resolveLanguage, translate, type Language, type TranslationKey, type TranslationVariables } from "./lib/i18n";
@@ -27,15 +33,6 @@ const PdfReader = lazy(() => import("./readers/PdfReader").then((module) => ({ d
 const TextReader = lazy(() => import("./readers/TextReader").then((module) => ({ default: module.TextReader })));
 
 const LANGUAGE_KEY = "webreader.language";
-
-function formatDate(timestamp: number, language: Language): string {
-  return new Intl.DateTimeFormat(language === "zh" ? "zh-CN" : "en", { month: "short", day: "numeric", year: "numeric" })
-    .format(timestamp);
-}
-
-function formatLabel(format: BookRecord["format"]): string {
-  return format === "txt" ? "TEXT" : format.toUpperCase();
-}
 
 function ModalFrame({ children, className = "", labelledBy, locked = false, onClose }: {
   children: ReactNode;
@@ -103,9 +100,9 @@ function ModalFrame({ children, className = "", labelledBy, locked = false, onCl
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.currentTarget === event.target && !locked) onClose();
     }}>
-      <section ref={dialogRef} tabIndex={-1} className={`dialog ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby={labelledBy} aria-busy={locked || undefined}>
+      <Dialog opened backdrop={false} ref={dialogRef} tabIndex={-1} className={`dialog ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby={labelledBy} aria-busy={locked || undefined}>
         {children}
-      </section>
+      </Dialog>
     </div>
   );
 }
@@ -122,6 +119,7 @@ function FeedbackDialog({ language, onClose, onSuccess }: {
 
   const send = async () => {
     if (!text.trim() || sending) return;
+    if (!navigator.onLine) { setFailed(true); return; }
     setSending(true);
     setFailed(false);
     try {
@@ -138,7 +136,7 @@ function FeedbackDialog({ language, onClose, onSuccess }: {
     <ModalFrame className="feedback-dialog" labelledBy="feedback-title" locked={sending} onClose={onClose}>
         <div className="dialog-heading">
           <div className="dialog-icon feedback-icon"><MessageSquare /></div>
-          <button className="icon-button" type="button" onClick={onClose} disabled={sending} aria-label={t("cancel")}><X /></button>
+          <Button className="icon-button" type="button" onClick={onClose} disabled={sending} aria-label={t("cancel")}><X /></Button>
         </div>
         <h2 id="feedback-title">{t("feedbackTitle")}</h2>
         <p>{t("feedbackHint")}</p>
@@ -156,8 +154,8 @@ function FeedbackDialog({ language, onClose, onSuccess }: {
           <span>{t("feedbackCounter", { count: text.length, max: MAX_FEEDBACK_LENGTH })}</span>
         </div>
         <div className="dialog-actions">
-          <button className="secondary-button" type="button" onClick={onClose} disabled={sending}>{t("cancel")}</button>
-          <button className="primary-button" type="button" onClick={() => void send()} disabled={sending || !text.trim()}>{sending ? t("sending") : t("send")}</button>
+          <Button className="secondary-button" type="button" onClick={onClose} disabled={sending}>{t("cancel")}</Button>
+          <Button className="primary-button" type="button" onClick={() => void send()} disabled={sending || !text.trim()}>{sending ? t("sending") : t("send")}</Button>
         </div>
     </ModalFrame>
   );
@@ -190,8 +188,8 @@ function DeleteDialog({ book, t, onClose, onConfirm }: {
       <p>{t("removeDescription", { title: book.title })}</p>
       {failed && <p className="dialog-error" role="alert">{t("removeFailed")}</p>}
       <div className="dialog-actions">
-        <button data-autofocus className="secondary-button" type="button" onClick={onClose} disabled={removing}>{t("cancel")}</button>
-        <button className="danger-button" type="button" onClick={() => void confirm()} disabled={removing}>{removing ? t("removing") : t("remove")}</button>
+        <Button data-autofocus className="secondary-button" type="button" onClick={onClose} disabled={removing}>{t("cancel")}</Button>
+        <Button className="danger-button" type="button" onClick={() => void confirm()} disabled={removing}>{removing ? t("removing") : t("remove")}</Button>
       </div>
     </ModalFrame>
   );
@@ -392,6 +390,12 @@ export default function App() {
   }, [refreshBooks]);
 
   const activeBookId = activeBook?.id;
+  const chrome = useReaderChrome(activeBookId, activeBook?.format === "txt", Boolean(readerPanel));
+  const openPanel = (panel: "outline" | "search" | "settings") => {
+    if (panel === "search") navigationRef.current?.clearSearch?.();
+    flushSync(() => setReaderPanel(panel));
+    if (panel === "search") document.getElementById("reader-search-input")?.focus({ preventScroll: true });
+  };
   const handleProgress = useCallback((locator: ReadingLocator) => {
     if (!activeBookId) return;
     setReaderLabel(locator.label);
@@ -455,7 +459,6 @@ export default function App() {
   }, [deleteTarget, refreshBooks]);
 
   const changeReadingProfile = useCallback((book: BookRecord, readingProfile: ReadingProfile) => {
-    setReaderPanel(undefined);
     readingProfileRef.current.set(book.id, readingProfile);
     setBooks((current) => current.map((item) => item.id === book.id ? { ...item, readingProfile } : item));
     setActiveBook((current) => current?.id === book.id ? { ...current, readingProfile } : current);
@@ -476,13 +479,14 @@ export default function App() {
 
   if (activeBook && activeFile) {
     return (
-      <main className={`reader-shell theme-${preferences.theme} ${readerPanel ? "panel-open" : ""}`}>
-        <header className="reader-toolbar">
+      <main className={`reader-shell theme-${preferences.theme} ${preferences.theme === "night" ? "dark" : ""} ${readerPanel ? "panel-open" : ""}`}>
+        <button className="chrome-reveal" type="button" onClick={chrome.show}>{language === "zh" ? "显示阅读工具栏" : "Show reading toolbar"}</button>
+        <ReaderToolbar hidden={chrome.hidden} panelOpen={Boolean(readerPanel)} onLock={chrome.lock}>
           <div className="reader-leading-controls">
-            <button className="icon-button" type="button" onClick={() => void closeReader()} title={t("backToLibrary")} aria-label={t("backToLibrary")}>
+            <Button clear className="icon-button" type="button" onClick={() => void closeReader()} title={t("backToLibrary")} aria-label={t("backToLibrary")}>
               <ChevronLeft />
-            </button>
-            <button
+            </Button>
+            <Button clear
               ref={outlineButtonRef}
               className={`icon-button ${readerPanel === "outline" ? "active" : ""}`}
               type="button"
@@ -490,11 +494,11 @@ export default function App() {
               aria-label={t("tableOfContents")}
               aria-expanded={readerPanel === "outline"}
               disabled={!capabilities.outline}
-              onClick={() => setReaderPanel((current) => current === "outline" ? undefined : "outline")}
+              onClick={() => openPanel("outline")}
             >
               <ListTree />
-            </button>
-            <button
+            </Button>
+            <Button clear
               ref={searchButtonRef}
               className={`icon-button ${readerPanel === "search" ? "active" : ""}`}
               type="button"
@@ -502,71 +506,53 @@ export default function App() {
               aria-label={t("searchBook")}
               aria-expanded={readerPanel === "search"}
               disabled={!capabilities.search}
-              onClick={() => setReaderPanel((current) => current === "search" ? undefined : "search")}
+              onClick={() => openPanel("search")}
             >
               <Search />
-            </button>
-          </div>
-          <div className="reader-title">
-            <strong>{activeBook.title}</strong>
-            <span>{readerLabel ?? formatLabel(activeBook.format)}</span>
+            </Button>
           </div>
           <div className="reader-controls">
-            {capabilities.readingProfile && (
-              <div className="reading-mode-switch" role="group" aria-label={t("readingMode")}>
-                <button
-                  type="button"
-                  className={activeBook.readingProfile === "book" ? "active" : ""}
-                  aria-pressed={activeBook.readingProfile === "book"}
-                  title={t("pagedMode")}
-                  onClick={() => changeReadingProfile(activeBook, "book")}
-                ><BookOpen /><span>{t("pagedMode")}</span></button>
-                <button
-                  type="button"
-                  className={activeBook.readingProfile === "article" ? "active" : ""}
-                  aria-pressed={activeBook.readingProfile === "article"}
-                  title={t("scrollMode")}
-                  onClick={() => changeReadingProfile(activeBook, "article")}
-                ><Rows3 /><span>{t("scrollMode")}</span></button>
-              </div>
-            )}
-            <button
+            <Button clear
               ref={settingsButtonRef}
               className={`icon-button ${readerPanel === "settings" ? "active" : ""}`}
               type="button"
               title={t("readerSettings")}
               aria-label={t("readerSettings")}
               aria-expanded={readerPanel === "settings"}
-              onClick={() => setReaderPanel((current) => current === "settings" ? undefined : "settings")}
+              onClick={() => openPanel("settings")}
             >
               <Settings2 />
-            </button>
+            </Button>
           </div>
-        </header>
+        </ReaderToolbar>
         <div className="reader-workspace">
           {readerPanel === "outline" && (
+            <ReaderSheet label={t("tableOfContents")} onClose={() => setReaderPanel(undefined)}>
+            <div className="reader-title"><strong>{activeBook.title}</strong><span>{readerLabel}</span></div>
             <ReaderOutline
               items={outline}
               currentTarget={currentTarget}
               automatic={automaticOutline}
               onNavigate={(target) => {
+                navigationRef.current?.clearSearch?.();
                 navigationRef.current?.goTo?.(target);
                 setReaderPanel(undefined);
               }}
               onClose={() => setReaderPanel(undefined)}
-              triggerRef={outlineButtonRef}
               t={t}
             />
+            </ReaderSheet>
           )}
           {readerPanel === "search" && (
+            <ReaderSheet label={t("searchBook")} onClose={() => setReaderPanel(undefined)}>
             <ReaderSearch
               controllerRef={navigationRef}
               onClose={() => setReaderPanel(undefined)}
-              triggerRef={searchButtonRef}
               t={t}
             />
+            </ReaderSheet>
           )}
-          <section className="reading-surface" aria-hidden={readerPanel ? true : undefined} inert={readerPanel ? true : undefined}>
+          <section className="reading-surface" tabIndex={-1} aria-hidden={readerPanel ? true : undefined} inert={readerPanel ? true : undefined}>
             <Suspense fallback={<div className="reader-loading">{t("preparingBook")}</div>}>
               {activeBook.format === "epub" && (
                 <EpubReader
@@ -601,7 +587,7 @@ export default function App() {
               {activeBook.format === "txt" && (
                 <TextReader
                   key={activeBook.id}
-                  layoutRevision={readerPanel ?? "closed"}
+                  onContentInteraction={chrome.onContentInteraction}
                   readingProfile={activeBook.readingProfile}
                   file={activeFile}
                   locator={activeBook.locator}
@@ -624,17 +610,34 @@ export default function App() {
             )}
           </section>
           {readerPanel === "settings" && (
+            <ReaderSheet label={t("readerSettings")} onClose={() => setReaderPanel(undefined)}>
+            {capabilities.readingProfile && (
+              <Segmented strong className="reading-mode-switch" role="group" aria-label={t("readingMode")}>
+                <SegmentedButton
+                  type="button"
+                  active={activeBook.readingProfile === "book"} aria-pressed={activeBook.readingProfile === "book"}
+                  title={t("pagedMode")}
+                  onClick={() => changeReadingProfile(activeBook, "book")}
+                ><BookOpen /><span>{t("pagedMode")}</span></SegmentedButton>
+                <SegmentedButton
+                  type="button"
+                  active={activeBook.readingProfile === "article"} aria-pressed={activeBook.readingProfile === "article"}
+                  title={t("scrollMode")}
+                  onClick={() => changeReadingProfile(activeBook, "article")}
+                ><Rows3 /><span>{t("scrollMode")}</span></SegmentedButton>
+              </Segmented>
+            )}
             <ReaderSettings
               language={language}
               preferences={preferences}
               typography={capabilities.typography}
               publisherFont={capabilities.publisherFont}
-              triggerRef={settingsButtonRef}
               onLanguageChange={setLanguage}
               onChange={updatePreferences}
               onClose={() => setReaderPanel(undefined)}
               t={t}
             />
+            </ReaderSheet>
           )}
         </div>
       </main>
@@ -642,104 +645,10 @@ export default function App() {
   }
 
   return (
-    <main className="library-shell">
-      <aside className="sidebar">
-        <div className="brand"><span className="brand-mark"><BookOpen /></span><span>WebReader</span></div>
-        <nav aria-label={t("librarySections")}>
-          <button className="nav-item active" type="button"><Library />{t("library")} <span>{books.length}</span></button>
-        </nav>
-        <div className="sidebar-actions">
-          {languageControl}
-          <button className="feedback-button" type="button" onClick={() => setFeedbackOpen(true)}><MessageSquare />{t("feedback")}</button>
-        </div>
-        <div className="privacy-note">
-          <strong>{t("privateTitle")}</strong>
-          <span>{t("privateNote")}</span>
-        </div>
-      </aside>
-
-      <section className="library-main">
-        <header className="library-header">
-          <div><p className="eyebrow">{t("localLibrary")}</p><h1>{t("yourBooks")}</h1></div>
-          <button className="primary-button" type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
-            <Plus />{busy ? t("importing") : t("addBooks")}
-          </button>
-          <input
-            ref={fileInputRef}
-            className="visually-hidden"
-            type="file"
-            accept=".epub,.pdf,.txt,application/epub+zip,application/pdf,text/plain"
-            multiple
-            disabled={busy}
-            onChange={(event) => void importFiles(Array.from(event.target.files ?? []))}
-          />
-        </header>
-
-        {message && <div className="notice" role="status"><span>{message}</span><button type="button" onClick={() => setMessage(undefined)} aria-label={t("dismiss")}><X /></button></div>}
-        {updateAction && (
-          <div className="notice update-notice" role="status">
-            <span>{t("updateReady")}</span>
-            <button className="notice-action" type="button" onClick={updateAction}>{t("update")}</button>
-          </div>
-        )}
-
-        <button
-          className={`drop-zone ${dragging ? "dragging" : ""}`}
-          type="button"
-          disabled={busy}
-          aria-busy={busy}
-          onClick={() => fileInputRef.current?.click()}
-          onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
-          onDragOver={(event) => event.preventDefault()}
-          onDragLeave={(event) => {
-            const nextTarget = event.relatedTarget;
-            if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) setDragging(false);
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragging(false);
-            void importFiles(Array.from(event.dataTransfer.files));
-          }}
-        >
-          <Import />
-          <span>{t("dropBooks")}</span>
-          <small>{t("maxFileSize")}</small>
-        </button>
-
-        {books.length === 0 ? (
-          <section className="empty-state">
-            <div className="empty-icon"><BookOpen /></div>
-            <h2>{t("shelfEmpty")}</h2>
-            <p>{t("shelfEmptyText")}</p>
-            <button className="secondary-button" type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
-              <Plus />{busy ? t("importing") : t("chooseFiles")}
-            </button>
-          </section>
-        ) : (
-          <section className="book-grid" aria-label={t("books")}>
-            {books.map((book) => {
-              const percent = Math.round((book.locator?.progression ?? 0) * 100);
-              return (
-                <article className="book-card" key={book.id}>
-                  <button className="book-open" type="button" onClick={() => void openBook(book)} aria-label={t("openBook", { title: book.title })}>
-                    <div className={`book-cover cover-${book.format}`}>
-                      {book.format === "pdf" ? <FileText /> : <BookOpen />}
-                      <span>{formatLabel(book.format)}</span>
-                    </div>
-                    <div className="book-info">
-                      <strong title={book.title}>{book.title}</strong>
-                      <span>{book.author ?? book.fileName}</span>
-                      <div className="progress-track"><i style={{ width: `${percent}%` }} /></div>
-                      <small>{book.locator ? t("percentRead", { percent }) : t("addedOn", { date: formatDate(book.addedAt, language) })} · {formatBytes(book.size)}</small>
-                    </div>
-                  </button>
-                  <button className="card-menu" type="button" title={t("removeBook", { title: book.title })} aria-label={t("removeBook", { title: book.title })} onClick={() => setDeleteTarget(book)}><Trash2 /></button>
-                </article>
-              );
-            })}
-          </section>
-        )}
-      </section>
+    <LibraryView books={books} language={language} languageControl={languageControl} busy={busy}
+      dragging={dragging} setDragging={setDragging} fileInputRef={fileInputRef} importFiles={importFiles}
+      openBook={openBook} setDeleteTarget={setDeleteTarget} setFeedbackOpen={setFeedbackOpen}
+      message={message} setMessage={setMessage} updateAction={updateAction} t={t}>
 
       {deleteTarget && (
         <DeleteDialog
@@ -751,6 +660,6 @@ export default function App() {
       )}
 
       {feedbackOpen && <FeedbackDialog language={language} onClose={() => setFeedbackOpen(false)} onSuccess={() => { setFeedbackOpen(false); setMessage(t("feedbackSuccess")); }} />}
-    </main>
+    </LibraryView>
   );
 }

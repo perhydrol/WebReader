@@ -1,3 +1,4 @@
+import { Button } from "konsta/react";
 import { Columns2, FileText, LoaderCircle, Rows3 } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -1021,15 +1022,15 @@ export function PdfReader({
     <div className={`reader-stage pdf-stage ${continuousCanvas ? "pdf-continuous" : "pdf-paginated"} ${showingPaper ? "pdf-paper-stage" : ""} theme-${preferences.theme}`} ref={setStage}>
       <div className="pdf-view-toolbar" role="toolbar" aria-label={t("pdfViewMode")}>
         <div className="pdf-view-switch" role="group" aria-label={t("pdfViewMode")}>
-          <button type="button" className={!showingPaper ? "active" : ""} aria-pressed={!showingPaper} onClick={() => { pendingPaperModeRef.current = undefined; changeView("pdf"); }}>
+          <Button clear type="button" className={!showingPaper ? "active" : ""} aria-pressed={!showingPaper} onClick={() => { pendingPaperModeRef.current = undefined; changeView("pdf"); }}>
             <FileText />{t("originalPdf")}
-          </button>
-          <button type="button" className={showingPaper && paperDisplayMode === "article" ? "active" : ""} aria-pressed={showingPaper && paperDisplayMode === "article"} onClick={() => openPaperMode("article")}>
+          </Button>
+          <Button clear type="button" className={showingPaper && paperDisplayMode === "article" ? "active" : ""} aria-pressed={showingPaper && paperDisplayMode === "article"} onClick={() => openPaperMode("article")}>
             {analysis.status === "running" && pendingPaperModeRef.current === "article" ? <LoaderCircle className="spin" /> : <Rows3 />}{t("reflowedArticle")}
-          </button>
-          <button type="button" className={showingPaper && paperDisplayMode === "proof" ? "active" : ""} aria-pressed={showingPaper && paperDisplayMode === "proof"} onClick={() => openPaperMode("proof")}>
+          </Button>
+          <Button clear type="button" className={showingPaper && paperDisplayMode === "proof" ? "active" : ""} aria-pressed={showingPaper && paperDisplayMode === "proof"} onClick={() => openPaperMode("proof")}>
             {analysis.status === "running" && pendingPaperModeRef.current === "proof" ? <LoaderCircle className="spin" /> : <Columns2 />}{t("proofreadLayout")}
-          </button>
+          </Button>
         </div>
         {analysis.status === "running" && <span>{t("pdfAnalysisProgress", { current: analysis.completedPages, total: analysis.totalPages })}</span>}
         {analysis.status === "failed" && <span className="pdf-analysis-error">{t("pdfAnalysisFailed")}</span>}

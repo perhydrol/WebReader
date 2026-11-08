@@ -15,6 +15,7 @@ import { TEXT_CONTENT_WIDTH } from "../lib/textDisplay";
 import { WheelGesture, normalizedWheelDelta, shouldIgnoreWheel } from "../lib/wheelPager";
 import type { ReaderPreferences } from "../types/library";
 import type { TextMatch, TextViewHandle, TextViewProps } from "./textViewTypes";
+import { bindReaderContentEvents } from "../lib/readerContentEvents";
 
 interface TextPagedViewProps extends TextViewProps {
   onKeyDown: (event: KeyboardEvent) => void;
@@ -70,7 +71,7 @@ function applyLayout(paginator: FoliatePaginatorElement, host: HTMLElement, pref
 }
 
 export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(function TextPagedView({
-  model, preferences, initialOffset, activeMatch, onOffset, onReady, onKeyDown,
+  model, preferences, initialOffset, activeMatch, onOffset, onReady, onKeyDown, onContentInteraction,
 }, ref) {
   const hostRef = useRef<HTMLDivElement>(null);
   const paginatorRef = useRef<FoliatePaginatorElement | null>(null);
@@ -84,6 +85,8 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
   const onReadyRef = useRef(onReady);
   const onKeyDownRef = useRef(onKeyDown);
   const activeMatchRef = useRef(activeMatch);
+  const interactionRef = useRef(onContentInteraction);
+  interactionRef.current = onContentInteraction;
   const mountedRef = useRef(true);
   preferencesRef.current = preferences;
   onOffsetRef.current = onOffset;
@@ -158,7 +161,7 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
     element.open(book);
 
     const gesture = new WheelGesture();
-    const attachedDocuments = new WeakSet<Document>();
+    const attachedDocuments = new Map<Document, () => void>();
     let loaded = false;
     let ready = false;
 
@@ -175,9 +178,21 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
 
     const attachDocument = (document: Document) => {
       if (attachedDocuments.has(document)) return;
-      attachedDocuments.add(document);
       document.addEventListener("wheel", handleWheel, { passive: false });
       document.addEventListener("keydown", handleKeyDown);
+      const dispose = bindReaderContentEvents(document, (event) => interactionRef.current?.(event), () => {
+        const frame = document.defaultView?.frameElement;
+        if (!frame) return undefined;
+        const frameRect = frame.getBoundingClientRect();
+        const hostRect = host.getBoundingClientRect();
+        if (frameRect.width <= 0) return undefined;
+        return { left: hostRect.left - frameRect.left, width: hostRect.width };
+      });
+      attachedDocuments.set(document, () => {
+        dispose();
+        document.removeEventListener("wheel", handleWheel);
+        document.removeEventListener("keydown", handleKeyDown);
+      });
     };
 
     const handleLoad = (event: Event) => {
@@ -186,6 +201,10 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
       setViewLoaded(true);
       const detail = (event as CustomEvent<{ doc?: Document }>).detail;
       if (!detail?.doc) return;
+      const live = new Set([...element.getContents().map((item) => item.doc), detail.doc]);
+      for (const [doc, dispose] of attachedDocuments) {
+        if (!live.has(doc)) { dispose(); attachedDocuments.delete(doc); }
+      }
       attachDocument(detail.doc);
       highlightDocument(detail.doc, model, activeMatchRef.current);
     };
@@ -228,6 +247,8 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
     return () => {
       mountedRef.current = false;
       gesture.reset();
+      for (const dispose of attachedDocuments.values()) dispose();
+      attachedDocuments.clear();
       host.removeEventListener("wheel", handleWheel);
       element.removeEventListener("load", handleLoad);
       element.removeEventListener("relocate", handleRelocate);

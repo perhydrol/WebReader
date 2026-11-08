@@ -1,3 +1,4 @@
+import { changeReaderMode, showReaderToolbar } from "./readerControls";
 import { expect, test, type Page } from "@playwright/test";
 import {
   BOUNDARY_MARKER, chapterText, CRLF_MARKER, crlfText, exactFragmentBoundaryText,
@@ -28,6 +29,7 @@ async function searchAndOpen(page: Page, query: string): Promise<void> {
 }
 
 async function closeSearch(page: Page): Promise<void> {
+  await page.keyboard.press("Control+f");
   await page.getByRole("button", { name: "关闭书内搜索" }).click();
 }
 
@@ -84,6 +86,35 @@ async function topVisibleOffset(page: Page): Promise<number> {
     if (!(scroller instanceof HTMLElement)) return Number.NaN;
     const rect = scroller.getBoundingClientRect();
     const padding = Number.parseFloat(getComputedStyle(scroller).paddingTop) || 0;
+    if (scroller.closest("[inert]")) {
+      for (const span of scroller.querySelectorAll<HTMLElement>("[data-source-start]")) {
+        if (span.getBoundingClientRect().bottom <= rect.top + padding + 2) continue;
+        const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        let consumed = 0;
+        while (node) {
+          const length = node.textContent?.length ?? 0;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const boxes = [...range.getClientRects()];
+          if (boxes.some((box) => box.bottom > rect.top + padding + 2)) {
+            let low = 0;
+            let high = Math.max(0, length - 1);
+            while (low < high) {
+              const middle = Math.floor((low + high) / 2);
+              range.setStart(node, middle);
+              range.setEnd(node, middle + 1);
+              if (range.getBoundingClientRect().bottom > rect.top + padding + 2) high = middle;
+              else low = middle + 1;
+            }
+            return Number(span.dataset.sourceStart) + consumed + low;
+          }
+          consumed += length;
+          node = walker.nextNode();
+        }
+      }
+      return Number.NaN;
+    }
     const range = document.caretRangeFromPoint(rect.left + rect.width / 2, rect.top + padding + 2);
     if (!range) return Number.NaN;
     const node = range.startContainer;
@@ -104,13 +135,15 @@ test("navigates the automatic outline in paged and scroll modes", async ({ page 
   await expect(page.getByRole("button", { name: "目录" })).toBeEnabled();
 
   const chapterThree = text.indexOf("第 3 章");
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "目录" }).click();
   await page.getByRole("button", { name: "第 3 章 合成章节" }).click();
   await expect.poll(() => offsetOf(page, ".text-stage-paged")).toBeGreaterThan(chapterThree - 3000);
 
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   const chapterSix = text.indexOf("第 6 章");
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "目录" }).click();
   await page.getByRole("button", { name: "第 6 章 合成章节" }).click();
   await expect.poll(() => offsetOf(page, ".text-stage-scroll")).toBeGreaterThanOrEqual(chapterSix - 40);
@@ -125,7 +158,7 @@ test("keeps the source position across mode switches, wheel scrolling, and font 
   const pagedOffset = await offsetOf(page, ".text-stage-paged");
   expect(pagedOffset).toBeGreaterThan(0);
 
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await expect(page.locator(".text-fragment").first()).toBeVisible();
   await expect.poll(() => offsetOf(page, ".text-stage-scroll")).toBeGreaterThanOrEqual(pagedOffset - 150);
@@ -146,7 +179,7 @@ test("keeps the source position across mode switches, wheel scrolling, and font 
   const afterFont = await offsetOf(page, ".text-stage-scroll");
   expect(Math.abs(afterFont - beforeFont)).toBeLessThanOrEqual(150);
 
-  await page.getByRole("button", { name: "翻页" }).click();
+  await changeReaderMode(page, "翻页");
   await expect(page.locator(".text-stage-paged")).toBeVisible();
   await expect.poll(() => offsetOf(page, ".text-stage-paged")).toBeLessThanOrEqual(beforeFont);
   await expect.poll(() => offsetOf(page, ".text-stage-paged")).toBeGreaterThan(beforeFont - 3000);
@@ -183,7 +216,7 @@ test("crosses paged chapters, keeps scroll mounts bounded, and supports keyboard
   await expect(page.locator(".text-stage-paged")).toBeVisible();
   await expect.poll(() => offsetOf(page, ".text-stage-paged")).toBeGreaterThan(endMarkerOffset - 3000);
 
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   const statsAtEnd = await page.evaluate(() => {
     const stage = document.querySelector(".text-stage-scroll");
@@ -234,7 +267,7 @@ test("highlights a search match split across fragment spans", async ({ page }) =
     .toBe(FRAGMENT_BOUNDARY_MARKER);
   await closeSearch(page);
 
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await waitViewReady(page, "article");
   await searchAndOpen(page, FRAGMENT_BOUNDARY_MARKER);
@@ -248,8 +281,8 @@ test("survives rapid mode toggles without stale progress callbacks", async ({ pa
   await expect(page.locator(".text-stage-paged")).toBeVisible();
   await waitViewReady(page, "book");
   for (let cycle = 0; cycle < 4; cycle += 1) {
-    await page.getByRole("button", { name: "滚动" }).click();
-    await page.getByRole("button", { name: "翻页" }).click();
+    await changeReaderMode(page, "滚动");
+    await changeReaderMode(page, "翻页");
   }
   await expect(page.locator(".text-stage-paged")).toBeVisible();
   await waitViewReady(page, "book");
@@ -276,7 +309,7 @@ test("preserves CRLF source offsets in both views", async ({ page }) => {
   await expect(frame.locator(".text-search-highlight")).toHaveText(CRLF_MARKER);
   await closeSearch(page);
 
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await waitViewReady(page, "article");
   await searchAndOpen(page, CRLF_MARKER);
@@ -340,7 +373,7 @@ test("turns paged pages with the mouse wheel", async ({ page }) => {
 test("restores a mid-fragment scroll position after reload", async ({ page }) => {
   const text = longParagraphText(20_000);
   await openReader(page, text);
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await waitViewReady(page, "article");
   await page.mouse.move(720, 450);
@@ -350,6 +383,7 @@ test("restores a mid-fragment scroll position after reload", async ({ page }) =>
   const savedTop = await topVisibleOffset(page);
   expect(saved % 4000).not.toBe(0);
 
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "返回书架" }).click();
   await page.reload();
   await page.getByRole("button", { name: `打开《${readerName}》` }).click();
@@ -363,7 +397,7 @@ test("restores a mid-fragment scroll position after reload", async ({ page }) =>
 
 test("keeps the scroll source position across outline and viewport changes", async ({ page }) => {
   await openReader(page, chapterText(10, 6));
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await waitViewReady(page, "article");
   await page.mouse.move(720, 450);
@@ -371,6 +405,7 @@ test("keeps the scroll source position across outline and viewport changes", asy
   await expect.poll(() => offsetOf(page, ".text-stage-scroll")).toBeGreaterThan(0);
   const before = await topVisibleOffset(page);
 
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "目录" }).click();
   await page.waitForTimeout(300);
   await expect.poll(async () => Math.abs((await topVisibleOffset(page)) - before)).toBeLessThanOrEqual(150);
@@ -385,7 +420,7 @@ test("keeps the scroll source position across outline and viewport changes", asy
 
 test("keeps the scroll target across font, spacing, indentation, and width settings", async ({ page }) => {
   await openReader(page, chapterText(10, 6));
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await waitViewReady(page, "article");
   await page.mouse.move(720, 450);
@@ -393,6 +428,7 @@ test("keeps the scroll target across font, spacing, indentation, and width setti
   await expect.poll(() => offsetOf(page, ".text-stage-scroll")).toBeGreaterThan(0);
   const before = await topVisibleOffset(page);
 
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "阅读设置" }).click();
   await page.getByLabel("字体").selectOption("serif");
   for (const option of ["宽松", "缩进两字"]) {
@@ -429,6 +465,7 @@ test("keeps the paged target visible across outline, viewport, and font changes"
     expect(saved - current).toBeLessThanOrEqual(5000);
   };
 
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "目录" }).click();
   await page.waitForTimeout(400);
   await expectTargetVisible();
@@ -444,6 +481,7 @@ test("keeps the paged target visible across outline, viewport, and font changes"
   await page.waitForTimeout(400);
   await expectTargetVisible();
 
+  await showReaderToolbar(page);
   await page.getByRole("button", { name: "阅读设置" }).click();
   await page.getByRole("button", { name: "宽", exact: true }).click();
   await page.waitForTimeout(400);
@@ -459,7 +497,7 @@ test("keeps the paged target visible across outline, viewport, and font changes"
 test("keeps selected source text across mounted fragment blocks", async ({ page }) => {
   const source = fragmentBoundaryText();
   await openReader(page, source);
-  await page.getByRole("button", { name: "滚动" }).click();
+  await changeReaderMode(page, "滚动");
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await waitViewReady(page, "article");
   await searchAndOpen(page, FRAGMENT_BOUNDARY_MARKER);
@@ -520,7 +558,8 @@ test("bounds paged chapter URLs and releases them on close", async ({ page }) =>
     await expect.poll(() => offsetOf(page, ".text-stage-paged")).toBeGreaterThan(50_000);
     await expect.poll(liveUrls).toBeLessThanOrEqual(1);
 
-    await page.getByRole("button", { name: "返回书架" }).click();
+    await showReaderToolbar(page);
+  await page.getByRole("button", { name: "返回书架" }).click();
     await expect.poll(liveUrls).toBe(0);
     await expect(page.locator("foliate-paginator")).toHaveCount(0);
   }

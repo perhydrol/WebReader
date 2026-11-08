@@ -96,10 +96,11 @@ test("keeps the 1440x900 desktop layout when safe areas are zero", async ({ page
   expect(reader.width).toBeCloseTo(viewport.width, 0);
   expect(reader.height).toBeCloseTo(viewport.height, 0);
   const toolbar = await boxOf(page.locator(".reader-toolbar"));
-  expect(toolbar.height).toBeCloseTo(58, 0);
+  expect(toolbar.height).toBeGreaterThanOrEqual(44);
+  expectInsideSafeArea(toolbar, ZERO, viewport);
   const surface = await boxOf(page.locator(".reading-surface"));
-  expect(surface.y).toBeCloseTo(58, 0);
-  expect(surface.height).toBeCloseTo(viewport.height - 58, 0);
+  expect(surface.y).toBeCloseTo(0, 0);
+  expect(surface.height).toBeCloseTo(viewport.height, 0);
   await expectNoPageScroll(page, viewport.height);
 });
 
@@ -118,7 +119,7 @@ test("portrait PWA keeps the shelf, reader, panels, and dialog clear of the stat
   expectInsideSafeArea(brand, insets, viewport);
   const header = await boxOf(page.locator(".library-header"));
   expect(header.y).toBeGreaterThanOrEqual(insets.top - 0.5);
-  expect(header.y - (sidebar.y + sidebar.height)).toBeCloseTo(30, 0);
+  expect(header.y).toBeGreaterThanOrEqual(sidebar.y + sidebar.height + 30);
   const dropZone = await boxOf(page.locator(".drop-zone"));
   expectInsideSafeArea(dropZone, { ...insets, top: 0, bottom: 0 }, viewport);
   await expectNoHorizontalOverflow(page, viewport.width);
@@ -136,19 +137,19 @@ test("portrait PWA keeps the shelf, reader, panels, and dialog clear of the stat
 
   await importAndOpenText(page);
   const toolbar = await boxOf(page.locator(".reader-toolbar"));
-  expect(toolbar.y).toBeCloseTo(insets.top, 0);
-  expect(toolbar.height).toBeCloseTo(58, 0);
+  expectInsideSafeArea(toolbar, insets, viewport);
+  expect(toolbar.y).toBeGreaterThan(viewport.height / 2);
   for (const name of ["返回书架", "目录", "书内搜索", "阅读设置"]) {
     expectInsideSafeArea(await boxOf(page.getByRole("button", { name })), insets, viewport);
   }
   const surface = await boxOf(page.locator(".reading-surface"));
-  expect(surface.y).toBeCloseTo(insets.top + 58, 0);
+  expect(surface.y).toBeCloseTo(insets.top, 0);
   expect(surface.y + surface.height).toBeCloseTo(viewport.height - insets.bottom, 0);
   await expectNoPageScroll(page, viewport.height);
 
   await page.getByRole("button", { name: "阅读设置" }).click();
   const settings = await boxOf(page.locator(".settings-panel"));
-  expect(settings.y).toBeCloseTo(insets.top + 58, 0);
+  expect(settings.y).toBeGreaterThanOrEqual(insets.top);
   expectInsideSafeArea(settings, insets, viewport);
   await page.getByRole("button", { name: "关闭阅读设置" }).click();
 
@@ -179,7 +180,7 @@ test("portrait PWA keeps the shelf, reader, panels, and dialog clear of the stat
   const landscapeViewport = page.viewportSize()!;
   const stage = page.locator(".text-stage-paged");
   await expect.poll(() => stage.evaluate((element) => element.clientHeight))
-    .toBeCloseTo(landscapeViewport.height - 58 - landscapeInsets.bottom, 0);
+    .toBeCloseTo(landscapeViewport.height - landscapeInsets.bottom, 0);
   await expect.poll(async () => {
     const current = await pagedOffset(page);
     return current <= blockStart + 40 && blockStart - current <= 5000;
@@ -202,14 +203,14 @@ test("landscape PWA insets both sides and keeps overlays inside the safe rectang
   expect(brand.x).toBeGreaterThanOrEqual(insets.left - 0.5);
   expectInsideSafeArea(brand, insets, viewport);
   const header = await boxOf(page.locator(".library-header"));
-  expect(header.y).toBeCloseTo(48 + insets.top, 0);
+  expect(header.y).toBeGreaterThanOrEqual(48 + insets.top);
   expectInsideSafeArea(header, insets, viewport);
   await expectNoHorizontalOverflow(page, viewport.width);
 
   await importAndOpenText(page);
   expectInsideSafeArea(await boxOf(page.locator(".reader-toolbar")), insets, viewport);
   expectInsideSafeArea(await boxOf(page.locator(".reading-surface")), insets, viewport);
-  expect((await boxOf(page.locator(".reader-title"))).width).toBeGreaterThan(0);
+  expect((await boxOf(page.locator(".reader-toolbar"))).width).toBeGreaterThan(0);
 
   await page.getByRole("button", { name: "阅读设置" }).click();
   const settings = await boxOf(page.locator(".settings-panel"));

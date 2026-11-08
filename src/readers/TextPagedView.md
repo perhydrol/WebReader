@@ -13,3 +13,5 @@
 - Chapter loading and generated markup are bounded by `textBook`; the view never prebuilds the whole book or keeps an unbounded chapter cache.
 
 The paginator uses a closed shadow root; application code interacts only through its public methods, attributes, and events.
+
+Loaded documents have an enumerable disposer map for keyboard, wheel and content interaction subscriptions. Each load prunes documents outside the public getContents() plus the current load document; unmount disposes all. Callback refs keep chrome updates out of model initialization dependencies. Tap geometry maps the visible host into iframe client coordinates through frameElement; no closed-shadow traversal is used.
