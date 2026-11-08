@@ -12,3 +12,5 @@ Coverage:
 The suite checks layout rules only. It does not replace Safari and home-screen PWA acceptance, and it does not prove the inset values Safari reports. See [src/App.css.md](../src/App.css.md) for the layout contract.
 
 The appearance case checks installed iOS meta configuration, live system light/dark root canvas and browser theme colors, manual reading background, and shelf restoration. It validates web configuration and canvas behavior, not native iOS status-bar rendering.
+
+The iOS declaration uses default status-bar mode. The appearance test also checks opaque matching backgrounds on body, React root and Konsta wrapper; this guards the web-owned backing layers, not the native iOS gutter.

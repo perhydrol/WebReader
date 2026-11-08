@@ -8,4 +8,6 @@ The content security policy, icon path, and module entry are independent of layo
 
 For the layout contract that consumes the reported insets, see [src/App.css.md](src/App.css.md). For authoritative WebKit behavior, see [Designing Websites for iPhone X](https://webkit.org/blog/7929/designing-websites-for-iphone-x/).
 
-Home-screen iOS mode declares apple-mobile-web-app-capable=yes and black-translucent status-bar style, requesting content beneath the system status bar. OS icons remain system-owned. Media-specific initial theme colors and the root canvas cover startup before React; App synchronizes both to the active shelf/reader appearance. Actual iOS rendering and installed metadata updates require device acceptance and are not guaranteed by desktop tests.
+Home-screen iOS mode declares apple-mobile-web-app-capable=yes and the default status-bar style. The legacy black-translucent mode is avoided because current WebKit standalone viewport regressions can expose a bottom strip outside the web layout. OS status-bar drawing remains system-owned. Media-specific initial theme colors and the root canvas cover startup before React; App synchronizes both to the active shelf/reader appearance. Actual iOS rendering and installed metadata updates require device acceptance and are not guaranteed by desktop tests.
+
+Platform reports and the compatibility decision are recorded in [the document-canvas contract](src/index.css.md).

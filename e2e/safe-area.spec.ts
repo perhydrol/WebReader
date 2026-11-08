@@ -14,13 +14,15 @@ test("matches browser chrome and the root canvas to system and reading appearanc
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute("content", "yes");
-  await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute("content", "black-translucent");
+  await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute("content", "default");
   const appearance = () => page.evaluate(() => ({
     background: getComputedStyle(document.documentElement).backgroundColor,
     color: [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
       .find((meta) => !meta.media || matchMedia(meta.media).matches)?.content,
   }));
   await expect.poll(appearance).toEqual({ background: "rgb(0, 0, 0)", color: "#000000" });
+  await expect.poll(() => page.evaluate(() => [document.body, document.querySelector("#root")!, document.querySelector(".k-app")!]
+    .map((element) => getComputedStyle(element).backgroundColor))).toEqual(["rgb(0, 0, 0)", "rgb(0, 0, 0)", "rgb(0, 0, 0)"]);
   await page.emulateMedia({ colorScheme: "light" });
   await expect.poll(appearance).toEqual({ background: "rgb(247, 248, 245)", color: "#f7f8f5" });
   await importAndOpenText(page);
