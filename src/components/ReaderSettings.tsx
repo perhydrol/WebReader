@@ -41,7 +41,7 @@ const widths: Array<{ value: ReaderPreferences["contentWidth"]; label: Translati
 
 export function ReaderSettings({ optionalFontReady, language, preferences, onLanguageChange, onChange, onClose, typography, publisherFont, t, readingModeControl }: ReaderSettingsProps) {
   const visibleFontOptions = publisherFont ? fontOptions : fontOptions.filter((option) => option.value !== "publisher");
-  const selectedFont = publisherFont || preferences.fontFamily !== "publisher" ? preferences.fontFamily : "serif";
+  const selectedFont = (!optionalFontReady && preferences.fontFamily === "wenkai") || (!publisherFont && preferences.fontFamily === "publisher") ? "serif" : preferences.fontFamily;
   const update = <Key extends keyof ReaderPreferences>(key: Key, value: ReaderPreferences[Key]) => {
     onChange({ ...preferences, [key]: value });
   };

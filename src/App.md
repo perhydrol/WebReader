@@ -17,3 +17,5 @@ Reader chrome and modal sheet behavior are delegated to ReaderToolbar, ReaderShe
 The reader follows system appearance by default. App resolves followSystemTheme to a concrete night/white theme without changing reader identity; explicit manual theme selection opts out. System media listeners are removed on unmount.
 
 The optional-font hook restores a cached font at application startup. Effective reader preferences temporarily fall back to serif until the verified font is ready, preserving the stored choice. Settings and library receive the shared availability state.
+
+Reading settings receive stored preferences so edits to other fields cannot persist an effective font fallback. Rendering adapters continue to receive effective preferences.

@@ -56,6 +56,21 @@ test("downloads the optional font explicitly, retries failures and restores it o
     return view.renderer?.getContents().some(({ doc }) => getComputedStyle(doc.body).fontFamily.includes("WebReader WenKai")
       && [...doc.fonts].some((face) => face.family === "WebReader WenKai" && face.status === "loaded"));
   })).toBe(true);
+  await context.setOffline(false);
+  await page.evaluate(() => caches.delete("webreader-optional-fonts-v1"));
+  await page.reload();
+  await page.getByRole("button", { name: "打开《font》" }).click();
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  await page.getByRole("button", { name: "增大字号" }).click();
+  await page.getByRole("button", { name: "关闭阅读设置" }).click();
+  await page.getByRole("button", { name: "返回书架" }).click();
+  await page.getByRole("button", { name: "应用设置", exact: true }).click();
+  await page.getByRole("button", { name: "下载字体" }).click();
+  await expect(page.getByRole("status")).toContainText("已下载");
+  await page.getByRole("button", { name: "返回书架" }).click();
+  await page.getByRole("button", { name: "打开《font》" }).click();
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  await expect(page.getByRole("combobox")).toHaveValue("wenkai");
 });
 
 test("hides an unavailable font and rejects a corrupt download or cache entry", async ({ page }) => {

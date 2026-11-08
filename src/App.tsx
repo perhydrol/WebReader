@@ -644,7 +644,7 @@ export default function App() {
               </Segmented>
             )}
               language={language}
-              preferences={readerPreferences}
+              preferences={preferences}
               typography={capabilities.typography}
               publisherFont={capabilities.publisherFont}
               onLanguageChange={setLanguage}
