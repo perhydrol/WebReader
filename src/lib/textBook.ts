@@ -22,7 +22,10 @@ function escapeHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/'/g, "&#39;")
+    // The HTML parser normalizes raw CR/CRLF to LF before tokenization.
+    // A character reference keeps CR in the DOM so source and DOM lengths agree.
+    .replace(/\r/g, "&#13;");
 }
 
 export function buildChapterHtml(model: TextSourceModel, chapter: TextChapter): string {
@@ -64,6 +67,7 @@ export function buildTextBookStyles(preferences: ReaderPreferences): string {
 
 export function createTextBook(model: TextSourceModel): TextBook {
   const urls = new Set<string>();
+  let destroyed = false;
   const sections: TextBookSection[] = model.chapters.map((chapter) => {
     let url: string | undefined;
     const unload = () => {
@@ -77,6 +81,9 @@ export function createTextBook(model: TextSourceModel): TextBook {
       linear: "yes",
       size: chapter.end - chapter.start,
       load: () => {
+        // A paginator navigation can resume after the reader has unmounted.
+        // Creating a URL at that point would never be revoked.
+        if (destroyed) return "";
         unload();
         url = URL.createObjectURL(new Blob([buildChapterHtml(model, chapter)], {
           type: "text/html;charset=utf-8",
@@ -92,6 +99,7 @@ export function createTextBook(model: TextSourceModel): TextBook {
     dir: "ltr",
     sections,
     destroy: () => {
+      destroyed = true;
       for (const section of sections) section.unload();
       for (const url of urls) URL.revokeObjectURL(url);
       urls.clear();

@@ -17,6 +17,14 @@ describe("safe text chapter documents", () => {
     expect(html).toContain(`data-source-end="${source.indexOf("\n\n")}"`);
   });
 
+  it("preserves CRLF characters instead of letting the HTML parser normalize them", () => {
+    const source = "第一行\r\n第二行\r\n\r\n第三行";
+    const model = buildTextSourceModel(source);
+    const html = buildChapterHtml(model, model.chapters[0]!);
+    expect(html).not.toContain("\r");
+    expect(html).toContain("第一行&#13;\n第二行");
+  });
+
   it("groups continuation fragments inside one paragraph element", () => {
     const model = buildTextSourceModel("a".repeat(5000));
     const html = buildChapterHtml(model, model.chapters[0]!);
@@ -53,21 +61,35 @@ describe("safe text chapter documents", () => {
 
 describe("text book lifecycle", () => {
   it("creates one lazy section per chapter and revokes URLs on unload", () => {
-    const model = buildTextSourceModel(`${"段落".repeat(20_000)}\n\n${"尾段".repeat(1000)}`);
+    const model = buildTextSourceModel("段落".repeat(30_000));
+    expect(model.chapters.length).toBeGreaterThan(1);
     const book = createTextBook(model);
     expect(book.sections).toHaveLength(model.chapters.length);
+    expect(book.sections).toHaveLength(2);
     expect(book.dir).toBe("ltr");
-    const section = book.sections[0]!;
-    expect(section.id).toBe(model.chapters[0]!.id);
-    expect(section.linear).toBe("yes");
+    expect(book.sections[0]!.id).toBe(model.chapters[0]!.id);
+    expect(book.sections[0]!.linear).toBe("yes");
 
     const revoke = vi.spyOn(URL, "revokeObjectURL");
-    const first = section.load();
+    const first = book.sections[0]!.load();
+    const second = book.sections[1]!.load();
     expect(first.startsWith("blob:")).toBe(true);
-    section.load();
+    expect(second.startsWith("blob:")).toBe(true);
+    expect(second).not.toBe(first);
+    book.sections[0]!.load();
     expect(revoke).toHaveBeenCalledWith(first);
-    section.unload();
+    book.sections[1]!.unload();
+    expect(revoke).toHaveBeenCalledWith(second);
     book.destroy();
     expect(revoke).toHaveBeenCalled();
+  });
+
+  it("does not create a chapter URL after the book is destroyed", () => {
+    const model = buildTextSourceModel("late initialization ".repeat(4_000));
+    const book = createTextBook(model);
+    const create = vi.spyOn(URL, "createObjectURL");
+    book.destroy();
+    expect(book.sections[0]!.load()).toBe("");
+    expect(create).not.toHaveBeenCalled();
   });
 });

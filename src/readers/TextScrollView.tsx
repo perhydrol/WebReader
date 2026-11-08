@@ -102,9 +102,9 @@ export const TextScrollView = forwardRef<TextViewHandle, TextViewProps>(function
     let attempts = 0;
 
     const finish = () => {
-      if (restoreTokenRef.current !== token) return;
+      if (!mountedRef.current || restoreTokenRef.current !== token) return;
       requestAnimationFrame(() => {
-        if (restoreTokenRef.current !== token) return;
+        if (!mountedRef.current || restoreTokenRef.current !== token) return;
         restoringRef.current = false;
         const scroller = scrollerRef.current;
         const actual = scroller ? visibleSourceOffset(scroller, model, lastOffsetRef.current) : lastOffsetRef.current;

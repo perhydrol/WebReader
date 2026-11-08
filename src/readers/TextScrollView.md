@@ -13,4 +13,4 @@
 
 ## Selection boundary
 
-The browser selection is native. Because offscreen items are unmounted, a selection whose nodes are virtualized away is lost, and `Ctrl+A` selects only mounted fragments. Full-book finding remains the in-book search. No custom selection editor or unbounded retained selection list is added here.
+The browser selection is native. Because offscreen items are unmounted, a selection whose nodes are virtualized away is lost, and `Ctrl+A` selects only mounted fragments. Chrome serializes the block boundary between mounted fragment items as a line break, so copying across a fragment boundary can insert a newline that is not in the source; the source characters themselves are unchanged. Full-book finding remains the in-book search. No custom selection editor or unbounded retained selection list is added here.

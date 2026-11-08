@@ -40,9 +40,23 @@ export function chapterText(chapters: number, paragraphsPerChapter = 4): string 
 
 export const BOUNDARY_MARKER = "边界标记ALPHA";
 export const FRAGMENT_BOUNDARY_MARKER = "边界跨界检索";
+export const CRLF_MARKER = "CRLF边界检索标记";
+
+export function crlfText(): string {
+  const lines: string[] = [];
+  for (let index = 0; index < 120; index += 1) {
+    lines.push(`第 ${index + 1} 行：${SENTENCE}`);
+  }
+  lines.splice(60, 0, `前段${CRLF_MARKER}后段`);
+  return `${lines.join("\r\n")}\r\n\r\n${SEARCH_MARKER} end-of-book marker`;
+}
 
 export function fragmentBoundaryText(): string {
   return `${"前".repeat(3995)}${FRAGMENT_BOUNDARY_MARKER}${"后".repeat(200)}`;
+}
+
+export function exactFragmentBoundaryText(): string {
+  return `${"前".repeat(4000)}${FRAGMENT_BOUNDARY_MARKER}${"后".repeat(1000)}`;
 }
 
 export function longParagraphText(unitsPerHalf = 49_000): string {

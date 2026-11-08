@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  BOUNDARY_MARKER, chapterText, FRAGMENT_BOUNDARY_MARKER, fragmentBoundaryText, longParagraphText,
-  multiParagraphText, SEARCH_MARKER, textPayload,
+  BOUNDARY_MARKER, chapterText, CRLF_MARKER, crlfText, exactFragmentBoundaryText,
+  FRAGMENT_BOUNDARY_MARKER, fragmentBoundaryText, longParagraphText, multiParagraphText, SEARCH_MARKER,
+  textPayload,
 } from "./syntheticText";
 
 const readerName = "synthetic reader";
@@ -258,6 +259,74 @@ test("survives rapid mode toggles without stale progress callbacks", async ({ pa
   await expect(page.getByText("阅读器遇到问题")).toHaveCount(0);
 });
 
+test("preserves CRLF source offsets in both views", async ({ page }) => {
+  await page.addInitScript(() => {
+    const attachShadow = Element.prototype.attachShadow;
+    Element.prototype.attachShadow = function (this: Element, init: ShadowRootInit) {
+      return attachShadow.call(this, { ...init, mode: "open" });
+    };
+  });
+  const text = crlfText();
+  const markerOffset = text.indexOf(CRLF_MARKER);
+  await openReader(page, text);
+  await expect(page.locator(".text-stage-paged")).toBeVisible();
+  await waitViewReady(page, "book");
+  await searchAndOpen(page, CRLF_MARKER);
+  const frame = page.frameLocator("foliate-paginator iframe");
+  await expect(frame.locator(".text-search-highlight")).toHaveText(CRLF_MARKER);
+  await closeSearch(page);
+
+  await page.getByRole("button", { name: "滚动" }).click();
+  await expect(page.locator(".text-stage-scroll")).toBeVisible();
+  await waitViewReady(page, "article");
+  await searchAndOpen(page, CRLF_MARKER);
+  await expect(page.locator(".text-search-highlight")).toHaveText(CRLF_MARKER);
+  const offset = await offsetOf(page, ".text-stage-scroll");
+  expect(Math.abs(offset - markerOffset)).toBeLessThanOrEqual(200);
+});
+
+test("places a fragment-boundary target on the page containing it", async ({ page }) => {
+  await page.addInitScript(() => {
+    const attachShadow = Element.prototype.attachShadow;
+    Element.prototype.attachShadow = function (this: Element, init: ShadowRootInit) {
+      return attachShadow.call(this, { ...init, mode: "open" });
+    };
+  });
+  await openReader(page, exactFragmentBoundaryText());
+  await expect(page.locator(".text-stage-paged")).toBeVisible();
+  await waitViewReady(page, "book");
+  await page.evaluate(() => {
+    const paginator = document.querySelector("foliate-paginator");
+    (window as unknown as { __relocateRanges: string[] }).__relocateRanges = [];
+    paginator?.addEventListener("relocate", (event) => {
+      const range = (event as CustomEvent<{ range?: Range }>).detail?.range;
+      if (range) (window as unknown as { __relocateRanges: string[] }).__relocateRanges.push(range.toString());
+    });
+  });
+  await searchAndOpen(page, FRAGMENT_BOUNDARY_MARKER);
+  await expect.poll(() => page.evaluate((marker) => (
+    (window as unknown as { __relocateRanges: string[] }).__relocateRanges
+      .some((text) => text.includes(marker))
+  ), FRAGMENT_BOUNDARY_MARKER)).toBe(true);
+});
+
+test("queues a search jump requested during a wheel page turn", async ({ page }) => {
+  await openReader(page, multiParagraphText(120));
+  await expect(page.locator(".text-stage-paged")).toBeVisible();
+  await waitViewReady(page, "book");
+  await page.keyboard.press("Control+f");
+  const search = page.getByRole("searchbox", { name: "书内搜索" });
+  await search.fill(SEARCH_MARKER);
+  await search.press("Enter");
+  await expect(page.locator(".search-result").first()).toBeVisible();
+  await page.evaluate(() => {
+    const paginator = document.querySelector("foliate-paginator");
+    paginator?.dispatchEvent(new WheelEvent("wheel", { deltaY: 120, bubbles: true, cancelable: true }));
+    document.querySelector(".search-result")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  await expect.poll(() => offsetOf(page, ".text-stage-paged")).toBeGreaterThan(10_000);
+});
+
 test("turns paged pages with the mouse wheel", async ({ page }) => {
   await openReader(page, multiParagraphText(60));
   await expect(page.locator(".text-stage-paged")).toBeVisible();
@@ -387,29 +456,37 @@ test("keeps the paged target visible across outline, viewport, and font changes"
   await expectTargetVisible();
 });
 
-test("supports native selection across mounted scroll fragments", async ({ page }) => {
-  await openReader(page, multiParagraphText(20));
+test("keeps selected source text across mounted fragment blocks", async ({ page }) => {
+  const source = fragmentBoundaryText();
+  await openReader(page, source);
   await page.getByRole("button", { name: "滚动" }).click();
   await expect(page.locator(".text-stage-scroll")).toBeVisible();
   await waitViewReady(page, "article");
+  await searchAndOpen(page, FRAGMENT_BOUNDARY_MARKER);
+  await closeSearch(page);
+
   const selected = await page.evaluate(() => {
     const spans = [...document.querySelectorAll(".text-fragment [data-source-start]")];
-    if (spans.length < 2) return "";
-    const first = spans[0]!.firstChild;
-    const second = spans[1]!.firstChild;
-    if (!first || !second) return "";
+    const first = spans.find((span) => span.getAttribute("data-source-start") === "0");
+    const second = spans.find((span) => span.getAttribute("data-source-start") === "4000");
+    const firstText = first?.firstChild;
+    const secondText = second?.firstChild;
+    if (!(firstText instanceof Text) || !(secondText instanceof Text)) return null;
     const range = document.createRange();
-    range.setStart(first, 0);
-    range.setEnd(second, Math.min(12, second.textContent?.length ?? 0));
+    range.setStart(firstText, firstText.length - 5);
+    range.setEnd(secondText, 6);
     const selection = window.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
-    return selection?.toString() ?? "";
+    return selection?.toString() ?? null;
   });
-  expect(selected.length).toBeGreaterThan(12);
+  expect(selected).not.toBeNull();
+  // Chrome serializes the block boundary as a line break. The actual source
+  // text survives unchanged; the inserted break is a reported limitation.
+  expect(selected!.replace(/\r?\n/g, "")).toBe(source.slice(3995, 4006));
 });
 
-test("releases paged blob URLs when the reader closes and reopens", async ({ page }) => {
+test("bounds paged chapter URLs and releases them on close", async ({ page }) => {
   await page.addInitScript(() => {
     const created = new Set<string>();
     const create = URL.createObjectURL.bind(URL);
@@ -425,19 +502,26 @@ test("releases paged blob URLs when the reader closes and reopens", async ({ pag
     };
     Object.defineProperty(window, "__liveBlobUrls", { get: () => [...created] });
   });
+  const liveUrls = () => page.evaluate(
+    () => (window as unknown as { __liveBlobUrls: string[] }).__liveBlobUrls.length,
+  );
 
   for (let cycle = 0; cycle < 3; cycle += 1) {
     await page.goto("/");
-    await page.locator('input[type="file"]').setInputFiles(textPayload(multiParagraphText(60), `cycle-${cycle}.txt`));
+    await page.locator('input[type="file"]').setInputFiles(
+      textPayload(longParagraphText(30_000), `cycle-${cycle}.txt`),
+    );
     await page.getByRole("button", { name: `打开《cycle ${cycle}》` }).click();
     await expect(page.locator(".text-stage-paged")).toBeVisible();
-    await expect.poll(async () => page.evaluate(
-      () => (window as unknown as { __liveBlobUrls: string[] }).__liveBlobUrls.length,
-    )).toBeGreaterThan(0);
+    await expect(page.locator(".text-stage-paged")).toHaveAttribute("data-source-offset", /^\d+$/);
+    await expect.poll(liveUrls).toBeGreaterThan(0);
+
+    await searchAndOpen(page, SEARCH_MARKER);
+    await expect.poll(() => offsetOf(page, ".text-stage-paged")).toBeGreaterThan(50_000);
+    await expect.poll(liveUrls).toBeLessThanOrEqual(1);
+
     await page.getByRole("button", { name: "返回书架" }).click();
-    await expect.poll(async () => page.evaluate(
-      () => (window as unknown as { __liveBlobUrls: string[] }).__liveBlobUrls.length,
-    )).toBe(0);
+    await expect.poll(liveUrls).toBe(0);
     await expect(page.locator("foliate-paginator")).toHaveCount(0);
   }
 });

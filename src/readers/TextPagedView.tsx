@@ -24,14 +24,15 @@ function rangeInDocument(document: Document, offset: number): Range | null {
   const elements = sourceElements(document);
   for (const element of elements) {
     const bounds = sourceBounds(element);
-    if (!bounds || offset < bounds.start || offset > bounds.end) continue;
-    const local = Math.min(bounds.end - bounds.start, Math.max(0, offset - bounds.start));
+    if (!bounds || offset < bounds.start || offset >= bounds.end) continue;
+    const local = offset - bounds.start;
     return rangeForLocalOffset(element, local, local) ?? null;
   }
   const last = elements[elements.length - 1];
   if (!last) return null;
   const bounds = sourceBounds(last);
-  return bounds ? rangeForLocalOffset(last, bounds.end - bounds.start, bounds.end - bounds.start) ?? null : null;
+  if (!bounds) return null;
+  return rangeForLocalOffset(last, bounds.end - bounds.start, bounds.end - bounds.start) ?? null;
 }
 
 function chapterForOffset(model: TextSourceModel, offset: number): { chapter: TextChapter; index: number } | undefined {
@@ -97,6 +98,7 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
 
   const turningRef = useRef(false);
   const pendingGoToRef = useRef<number | undefined>(undefined);
+  const turnRef = useRef<(direction: "previous" | "next") => void>(() => undefined);
 
   const performGoTo = useCallback((offset: number) => {
     lastOffsetRef.current = offset;
@@ -130,6 +132,7 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
       if (pending !== undefined) performGoTo(pending);
     });
   }, [performGoTo]);
+  turnRef.current = turn;
 
   useImperativeHandle(ref, () => ({
     goTo,
@@ -165,8 +168,7 @@ export const TextPagedView = forwardRef<TextViewHandle, TextPagedViewProps>(func
       if (!delta) return;
       event.preventDefault();
       const direction = gesture.push(delta, event.timeStamp);
-      if (direction === "previous") void element.prev().catch(() => undefined);
-      else if (direction === "next") void element.next().catch(() => undefined);
+      if (direction) turnRef.current(direction);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => onKeyDownRef.current(event);

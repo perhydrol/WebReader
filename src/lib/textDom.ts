@@ -69,11 +69,17 @@ export function rangeRectForLocalOffset(root: Element, offset: number): DOMRect 
 }
 
 export function sourceOffsetFromDomRange(range: Range): number | undefined {
-  if (range.startContainer.nodeType === Node.TEXT_NODE) {
-    return sourceOffsetFromDomPoint(range.startContainer, range.startOffset);
-  }
   const document = range.startContainer.ownerDocument;
   if (!document) return undefined;
+  const containing = closestSourceElement(range.startContainer);
+  if (containing) {
+    const bounds = sourceBounds(containing);
+    if (!bounds) return undefined;
+    const before = document.createRange();
+    before.setStart(containing, 0);
+    before.setEnd(range.startContainer, range.startOffset);
+    return Math.min(bounds.end, bounds.start + before.toString().length);
+  }
   for (const element of sourceElements(document)) {
     const bounds = sourceBounds(element);
     if (!bounds) continue;
