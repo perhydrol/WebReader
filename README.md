@@ -30,18 +30,18 @@ The original PDF Canvas remains authoritative. Its PDF.js text layer is selectab
 
 ## Development
 
-Requires Node.js 24 or newer.
+Requires Node.js 24 or newer and the pnpm version pinned in `package.json`. Install pnpm using its [official installation guide](https://pnpm.io/installation).
 
 ```bash
-npm ci
-npm run dev
-npm run check
-npm run test:e2e
-npm run preview
+pnpm install --frozen-lockfile
+pnpm run dev
+pnpm run check
+pnpm run test:e2e
+pnpm run preview
 ```
 
-`npm run check` runs unit tests, lint, TypeScript, and the production build.
-`npm run test:e2e` builds the production application and exercises synthetic EPUB/PDF/text import, navigation, cross-format search, source highlighting, progress restoration, and PWA/cache privacy in Chrome. Install Chrome once with `npx playwright install chrome` when it is not already available.
+`pnpm run check` runs unit tests, lint, TypeScript, and the production build.
+`pnpm run test:e2e` builds the production application and exercises synthetic EPUB/PDF/text import, navigation, cross-format search, source highlighting, progress restoration, and PWA/cache privacy in Chrome. Install Chrome once with `pnpm exec playwright install chrome` when it is not already available.
 
 ### Local Paper Reflow
 

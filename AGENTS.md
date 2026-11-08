@@ -22,7 +22,7 @@ This file applies to the WebReader repository. Cross-project strategy, Git/main 
 ## Workflow
 
 1. Run `git status --short --branch` and preserve existing local changes and untracked material.
-2. Use Node 24 or newer, npm, and the committed `package-lock.json`.
+2. Use Node 24 or newer, pnpm (as pinned in `package.json`), and the committed `pnpm-lock.yaml`.
 3. Never add real books, private documents, screenshots, browser profiles, IndexedDB dumps, generated build output, or test output to Git.
 4. Use synthetic fixtures or clearly redistributable public-domain fixtures only. Record provenance for any non-synthetic fixture.
 5. Stage explicit paths. Inspect `git diff --cached` and the staged file list before every commit.
@@ -63,17 +63,17 @@ The stack is React, TypeScript, Vite, Dexie, foliate-js, PDF.js, Lucide, Vitest,
 
 ### Commands
 
-- Install: `npm ci`
-- Develop: `npm run dev`
-- Unit tests: `npm test`
-- Watch tests: `npm run test:watch`
-- Lint: `npm run lint`
-- Type-check and build: `npm run build`
-- Full minimum validation: `npm run check`
-- Desktop production E2E: `npm run test:e2e` (requires Chrome; install with `npx playwright install chrome` when unavailable)
-- Preview production build: `npm run preview`
+- Install: `pnpm install --frozen-lockfile`
+- Develop: `pnpm run dev`
+- Unit tests: `pnpm test`
+- Watch tests: `pnpm run test:watch`
+- Lint: `pnpm run lint`
+- Type-check and build: `pnpm run build`
+- Full minimum validation: `pnpm run check`
+- Desktop production E2E: `pnpm run test:e2e` (requires Chrome; install with `pnpm exec playwright install chrome` when unavailable)
+- Preview production build: `pnpm run preview`
 
-File import, IndexedDB migration, PWA, EPUB/PDF rendering, worker URL, CSP, page navigation, or visual changes also require `npm run test:e2e` plus a focused desktop browser check when the affected behavior is not covered by the synthetic suite.
+File import, IndexedDB migration, PWA, EPUB/PDF rendering, worker URL, CSP, page navigation, or visual changes also require `pnpm run test:e2e` plus a focused desktop browser check when the affected behavior is not covered by the synthetic suite.
 
 ### Deployment
 
