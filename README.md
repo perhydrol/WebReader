@@ -23,7 +23,7 @@ Production: https://perhydrol.github.io/WebReader/
 - Legacy Markdown records from earlier versions stay visible in the local library, are blocked from opening, and can be deleted without touching their stored source
 - Bounded EPUB container preflight that rejects encrypted, malformed, path-unsafe, duplicate, and excessive expanded entries before they reach the library
 - Ordered, coalesced local writes for reading progress and preferences, flushed when leaving a reader or hiding the page
-- Installable PWA application shell
+- Installable PWA application shell, with iOS status-bar underlay configuration and browser colors following the shelf or reading appearance
 - Fully static GitHub Pages deployment
 
 Books, extracted content, search queries, search results, reading progress, and preferences remain in the current browser. Search indexes exist only in memory for the open reader and are not written to IndexedDB or Cache Storage. Clearing site data can remove the local library. PWA installation is not a backup. For a text-layer PDF, **Reflowed article** analyzes text locally and reconstructs a continuous single-column reading order without an LLM. **Proof view** places each original PDF page beside the blocks assigned to that page so column order, omissions, headers, footers, equations, and references can be checked against the visual source.

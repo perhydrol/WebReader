@@ -19,3 +19,5 @@ The reader follows system appearance by default. App resolves followSystemTheme 
 The optional-font hook restores a cached font at application startup. Effective reader preferences temporarily fall back to serif until the verified font is ready, preserving the stored choice. Settings and library receive the shared availability state.
 
 Reading settings receive stored preferences so edits to other fields cannot persist an effective font fallback. Rendering adapters continue to receive effective preferences.
+
+App synchronizes the root canvas, CSS color-scheme and both browser theme-color meta tags with the current shelf or reading background. Layout effect updates before paint, depends only on resolved appearance and restores previous document values on cleanup. This changes the page behind system UI; it does not hide iOS status icons.

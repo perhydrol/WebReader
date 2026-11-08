@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint && stylelint src/App.css src/styles/konsta.css",
+    "lint": "oxlint && stylelint src/App.css src/index.css src/styles/konsta.css",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

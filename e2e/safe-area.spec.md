@@ -10,3 +10,5 @@ Coverage:
 - Landscape insets protect both horizontal sides, keep the desktop sidebar and main column aligned, preserve the night-theme reader background, and lift the fixed PDF page indicator by the bottom inset.
 
 The suite checks layout rules only. It does not replace Safari and home-screen PWA acceptance, and it does not prove the inset values Safari reports. See [src/App.css.md](../src/App.css.md) for the layout contract.
+
+The appearance case checks installed iOS meta configuration, live system light/dark root canvas and browser theme colors, manual reading background, and shelf restoration. It validates web configuration and canvas behavior, not native iOS status-bar rendering.

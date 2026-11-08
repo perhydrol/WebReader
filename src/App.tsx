@@ -27,6 +27,7 @@ import {
 } from "./lib/storage";
 import type { BookRecord, ReaderPreferences, ReadingLocator, ReadingProfile } from "./types/library";
 import { DEFAULT_PREFERENCES } from "./types/library";
+import { TEXT_THEME_COLORS } from "./lib/textDisplay";
 import type { ReaderCapabilities, ReaderController, ReaderOutlineItem } from "./types/reader";
 import { NO_READER_CAPABILITIES } from "./types/reader";
 
@@ -215,6 +216,23 @@ export default function App() {
   const readerPreferences = useMemo<ReaderPreferences>(() => ({ ...preferences,
     fontFamily: preferences.fontFamily === "wenkai" && optionalFontState !== "ready" ? "serif" : preferences.fontFamily,
     theme: preferences.followSystemTheme !== false ? systemDark ? "night" : "white" : preferences.theme }), [preferences, systemDark, optionalFontState]);
+  const browserColor = activeBook && activeFile ? TEXT_THEME_COLORS[readerPreferences.theme].background : systemDark ? "#000000" : "#f7f8f5";
+  const browserDark = activeBook && activeFile ? readerPreferences.theme === "night" : systemDark;
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previousBackground = root.style.backgroundColor;
+    const previousScheme = root.style.colorScheme;
+    const colors = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
+      .map((meta) => ({ meta, content: meta.content }));
+    root.style.backgroundColor = browserColor;
+    root.style.colorScheme = browserDark ? "dark" : "light";
+    for (const { meta } of colors) meta.content = browserColor;
+    return () => {
+      root.style.backgroundColor = previousBackground;
+      root.style.colorScheme = previousScheme;
+      for (const { meta, content } of colors) meta.content = content;
+    };
+  }, [browserColor, browserDark]);
 
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);

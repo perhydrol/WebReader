@@ -10,6 +10,28 @@ type Box = { x: number; y: number; width: number; height: number };
 // Synthetic inset values describe test scenarios; they are not measurements of any device.
 const ZERO: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 
+test("matches browser chrome and the root canvas to system and reading appearance", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute("content", "yes");
+  await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute("content", "black-translucent");
+  const appearance = () => page.evaluate(() => ({
+    background: getComputedStyle(document.documentElement).backgroundColor,
+    color: [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
+      .find((meta) => !meta.media || matchMedia(meta.media).matches)?.content,
+  }));
+  await expect.poll(appearance).toEqual({ background: "rgb(0, 0, 0)", color: "#000000" });
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect.poll(appearance).toEqual({ background: "rgb(247, 248, 245)", color: "#f7f8f5" });
+  await importAndOpenText(page);
+  await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+  await page.getByRole("button", { name: "暖纸", exact: true }).click();
+  await expect.poll(appearance).toEqual({ background: "rgb(245, 241, 232)", color: "#f5f1e8" });
+  await page.getByRole("button", { name: "关闭阅读设置" }).click();
+  await page.getByRole("button", { name: "返回书架" }).click();
+  await expect.poll(appearance).toEqual({ background: "rgb(247, 248, 245)", color: "#f7f8f5" });
+});
+
 async function applySafeArea(page: Page, insets: Insets) {
   await page.evaluate((value) => {
     const style = document.documentElement.style;
