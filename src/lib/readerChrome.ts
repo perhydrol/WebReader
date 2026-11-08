@@ -18,7 +18,8 @@ export function transitionChrome(state: ReaderChromeState, event: ChromeEvent): 
     const locks = new Set(state.locks);
     if (event.active) locks.add(event.id);
     else locks.delete(event.id);
-    return { visibility: locks.size ? "pinned" : "visible", locks, since: event.now };
+    const keepHidden = state.visibility === "hidden" && event.id.startsWith("pointer-active:");
+    return { visibility: keepHidden ? "hidden" : locks.size ? "pinned" : "visible", locks, since: event.now };
   }
   if (state.locks.size) return state;
   if (event.type === "idle") {

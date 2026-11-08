@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createReaderChrome, transitionChrome, qualifiesTap } from "./readerChrome";
 
 describe("reader chrome", () => {
+  it("keeps a hidden toolbar hidden during a pointer and reveals it after the completed tap", () => {
+    let state = transitionChrome(createReaderChrome(0), { type: "idle", now: 4000 });
+    state = transitionChrome(state, { type: "lock", id: "pointer-active:doc", active: true, now: 5000 });
+    expect(state.visibility).toBe("hidden");
+    state = transitionChrome(state, { type: "lock", id: "pointer-active:doc", active: false, now: 5100 });
+    expect(state.visibility).toBe("hidden");
+    state = transitionChrome(state, { type: "tap", now: 5350 });
+    expect(state.visibility).toBe("visible");
+  });
   it("hides only after a full idle interval and restarts after the final independent lock", () => {
     let state = createReaderChrome(0);
     expect(transitionChrome(state, { type: "idle", now: 3999 }).visibility).toBe("visible");
