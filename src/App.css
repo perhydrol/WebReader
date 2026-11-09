@@ -118,11 +118,6 @@ h2 { margin: 0; font-size: 20px; }
 .dialog-heading .dialog-icon { margin: 0; }
 .dialog-heading .icon-button:disabled { opacity: .45; cursor: wait; }
 .feedback-icon { color: var(--green); background: #e5e5ea; }
-.feedback-dialog textarea { width: 100%; resize: vertical; min-height: 116px; padding: 11px 12px; border: 1px solid #cbd2c9; border-radius: 6px; color: var(--ink); background: white; line-height: 1.5; }
-.feedback-dialog .dialog-actions button:disabled { opacity: .55; cursor: wait; }
-.feedback-meta { min-height: 28px; padding-top: 6px; display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }
-.feedback-meta > span:last-child { margin-left: auto; white-space: nowrap; }
-.feedback-error { color: #98382f; }
 .dialog p { margin: 10px 0 24px; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .dialog p.dialog-error { margin: -12px 0 18px; color: #98382f; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; }

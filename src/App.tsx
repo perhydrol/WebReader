@@ -15,7 +15,6 @@ import { useReaderChrome } from "./hooks/useReaderChrome";
 import { ReaderOutline } from "./components/ReaderOutline";
 import { ReaderSearch } from "./components/ReaderSearch";
 import { ReaderSettings } from "./components/ReaderSettings";
-import { submitFeedback, MAX_FEEDBACK_LENGTH } from "./lib/feedback";
 import { BookFormatError, detectBookFormat, displayTitle, isLegacyMarkdownRecord } from "./lib/formats";
 import { fingerprintFile } from "./lib/fingerprint";
 import { CoalescingWriteQueue } from "./lib/coalescingWriteQueue";
@@ -62,7 +61,7 @@ function ModalFrame({ children, className = "", labelledBy, locked = false, onCl
       element.setAttribute("aria-hidden", "true");
     }
     const focusable = () => [...(dialog?.querySelectorAll<HTMLElement>(
-      "button:not(:disabled), textarea:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex='-1'])",
+      "a[href], button:not(:disabled), textarea:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex='-1'])",
     ) ?? [])];
     (dialog?.querySelector<HTMLElement>("[data-autofocus]") ?? focusable()[0])?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -110,56 +109,23 @@ function ModalFrame({ children, className = "", labelledBy, locked = false, onCl
   );
 }
 
-function FeedbackDialog({ language, onClose, onSuccess }: {
+function FeedbackDialog({ language, onClose }: {
   language: Language;
   onClose: () => void;
-  onSuccess: () => void;
 }) {
-  const t = useCallback((key: TranslationKey, variables: TranslationVariables = {}) => translate(language, key, variables), [language]);
-  const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  const send = async () => {
-    if (!text.trim() || sending) return;
-    if (!navigator.onLine) { setFailed(true); return; }
-    setSending(true);
-    setFailed(false);
-    try {
-      await submitFeedback(text, language);
-      onSuccess();
-    } catch {
-      setFailed(true);
-    } finally {
-      setSending(false);
-    }
-  };
-
+  const t = (key: TranslationKey) => translate(language, key);
   return (
-    <ModalFrame className="feedback-dialog" labelledBy="feedback-title" locked={sending} onClose={onClose}>
-        <div className="dialog-heading">
-          <div className="dialog-icon feedback-icon"><MessageSquare /></div>
-          <ShelfButton className="icon-button" type="button" onClick={onClose} disabled={sending} aria-label={t("cancel")}><X /></ShelfButton>
-        </div>
-        <h2 id="feedback-title">{t("feedbackTitle")}</h2>
-        <p>{t("feedbackHint")}</p>
-        <textarea
-          data-autofocus
-          rows={5}
-          maxLength={MAX_FEEDBACK_LENGTH}
-          value={text}
-          placeholder={t("feedbackPlaceholder")}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={(event) => { if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) void send(); }}
-        />
-        <div className="feedback-meta">
-          <span className={failed ? "feedback-error" : ""}>{failed ? t("feedbackFailure") : ""}</span>
-          <span>{t("feedbackCounter", { count: text.length, max: MAX_FEEDBACK_LENGTH })}</span>
-        </div>
-        <div className="dialog-actions">
-          <ShelfButton className="secondary-button" type="button" onClick={onClose} disabled={sending}>{t("cancel")}</ShelfButton>
-          <ShelfButton className="primary-button" type="button" onClick={() => void send()} disabled={sending || !text.trim()}>{sending ? t("sending") : t("send")}</ShelfButton>
-        </div>
+    <ModalFrame className="feedback-dialog" labelledBy="feedback-title" onClose={onClose}>
+      <div className="dialog-heading">
+        <div className="dialog-icon feedback-icon"><MessageSquare /></div>
+        <ShelfButton className="icon-button" type="button" onClick={onClose} aria-label={t("cancel")}><X /></ShelfButton>
+      </div>
+      <h2 id="feedback-title">{t("feedbackTitle")}</h2>
+      <p>{t("feedbackHint")}</p>
+      <div className="dialog-actions">
+        <ShelfButton className="secondary-button" type="button" onClick={onClose}>{t("cancel")}</ShelfButton>
+        <a className="primary-button" href="https://github.com/perhydrol/WebReader/issues" target="_blank" rel="noopener noreferrer">{t("feedbackOpenIssues")}</a>
+      </div>
     </ModalFrame>
   );
 }
@@ -692,7 +658,7 @@ export default function App() {
         />
       )}
 
-      {feedbackOpen && <FeedbackDialog language={language} onClose={() => setFeedbackOpen(false)} onSuccess={() => { setFeedbackOpen(false); setMessage(t("feedbackSuccess")); }} />}
+      {feedbackOpen && <FeedbackDialog language={language} onClose={() => setFeedbackOpen(false)} />}
     </LibraryView>
   );
 }

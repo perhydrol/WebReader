@@ -11,7 +11,7 @@ This file applies to the WebReader repository. Cross-project strategy, Git/main 
 - WebReader is a private-by-default, local-first browser reader.
 - The interface is bilingual Chinese/English and defaults to Chinese; user language choice is kept in the browser.
 - Imported book bytes, covers, reading history, annotations, search indexes, and locally reflowed paper text must not be uploaded to GitHub or any remote service. Ordinary reading and paper reflow never send extracted text. WebReader currently has no content-translation UI, provider runtime, development proxy, or standalone translation entry; existing local translation records may remain only for IndexedDB compatibility and must not be read or resumed by the application.
-- User-submitted feedback text may be sent to the shared feedback service only after an explicit submit action and must never include book files, names, library metadata, reading history, or fingerprints.
+- Feedback directs users to this repository’s GitHub Issues through an explicit external link. Never collect feedback text or attach book files, names, library metadata, reading history, or fingerprints.
 - Text-layer PDFs may be analyzed locally into stable source blocks, shown as a deterministic single-column article or a page-by-page proof view beside the authoritative PDF Canvas, and mapped back to PDF.js TextLayer items and source regions. OCR, semantic rewriting, model-assisted ordering, and silent synthesis of missing content are not supported.
 - GitHub Pages hosts only the static application. GitHub Actions is CI/CD, not an application server or persistent VPS.
 - The first supported formats are DRM-free EPUB, PDF, and TXT. Markdown import and rendering are not supported. Legacy Markdown rows stored as TXT remain visible, are blocked from opening by fileName/mediaType at the library entry, and stay deletable without migration or silent conversion. DRM circumvention is out of scope.
@@ -59,7 +59,6 @@ This file applies to the WebReader repository. Cross-project strategy, Git/main 
 - `src/lib/fingerprint.ts`: bounded content fingerprinting used for local duplicate detection.
 - `src/lib/storage.ts`: Dexie/IndexedDB repository for book metadata, source Blob, settings, locators, and legacy translation-store declarations retained only to open and clean up existing v3/v4 databases without losing books.
 - `src/lib/i18n.ts`: Chinese/English interface strings and language selection.
-- `src/lib/feedback.ts`: explicit text-only feedback request to the shared Cloudflare feedback service.
 - `src/types/`: stable publication, locator, preference, and third-party adapter types.
 - `public/`: committed application icons and public static assets.
 - `dist/`: generated Vite/Pages artifact; never edit or commit.
@@ -104,8 +103,8 @@ The service worker caches only the application shell. Explicit optional-font dow
 - Do not trust extension or client MIME alone. Keep signature/container checks and explicit file/resource limits.
 - EPUB and other archive formats are untrusted active inputs. Keep the restrictive CSP, block scripted publication content, forms, remote resource requests, and automatic external navigation.
 - PDF.js must run parsing in its worker. Keep Canvas as the authoritative rendering source and do not create or import PDF scripting managers, sandboxes, or document JavaScript actions. The official PDF.js TextLayer may overlay Canvas solely for local selection and source-item mapping. Bounded local reflow may use `getTextContent()` but must not transmit it, infer missing text, or hide rejected pages.
-- Do not add remote fonts, runtime CDNs, metadata APIs, cover fetches, link prefetching, content-translation providers, or any ordinary-reader network destination beyond the reviewed feedback endpoint without a new explicit product decision.
-- Feedback requests must remain text-only, explicit, bounded to 2000 characters, and covered by client tests. Never attach book or library context. The shared service may retain connection metadata only for rate limiting, abuse prevention, and the protected feedback viewer.
+- Do not add remote fonts, runtime CDNs, metadata APIs, cover fetches, link prefetching, content-translation providers, or any ordinary-reader network destination without a new explicit product decision.
+- Feedback uses an explicit GitHub Issues navigation link with no prefilled local context. Explain that GitHub requires connectivity and issue contents may be public.
 - A new format needs its own input validation, adapter, locator semantics, compatibility statement, malformed fixtures, and resource limits.
 - "Supported" means the project defines readable output, navigation, progress stability, failure behavior, and cleanup. Opening one sample is not sufficient.
 

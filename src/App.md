@@ -21,3 +21,5 @@ The optional-font hook restores a cached font at application startup. Effective 
 Reading settings receive stored preferences so edits to other fields cannot persist an effective font fallback. Rendering adapters continue to receive effective preferences.
 
 App synchronizes the root canvas, CSS color-scheme and both browser theme-color meta tags with the current shelf or reading background. Layout effect updates before paint, depends only on resolved appearance and restores previous document values on cleanup. This changes the page behind system UI; it does not hide iOS status icons.
+
+Feedback opens a guidance dialog with an explicit external GitHub Issues link. It collects no text, attaches no local data, and uses a new page with noopener/noreferrer.

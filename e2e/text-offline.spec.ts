@@ -73,10 +73,18 @@ test("serves TXT reading from the WebReader subpath after an offline restart", a
     await page.getByRole("button", { name: "应用设置" }).click();
     await expect(page.getByText("清除网站数据", { exact: false })).toBeVisible();
     await page.getByRole("button", { name: "反馈", exact: true }).click();
-    await page.getByPlaceholder("遇到了什么问题？或有什么建议？").fill("合成离线反馈");
-    await page.getByRole("button", { name: "提交", exact: true }).click();
-    await expect(page.getByText("反馈提交失败，请稍后重试。")).toBeVisible();
-    await expect(page.getByPlaceholder("遇到了什么问题？或有什么建议？")).toHaveValue("合成离线反馈");
+    const issuesLink = page.getByRole("link", { name: "前往 GitHub Issues" });
+    await expect(issuesLink).toHaveAttribute("href", "https://github.com/perhydrol/WebReader/issues");
+    await expect(issuesLink).toHaveAttribute("target", "_blank");
+    await expect(issuesLink).toHaveAttribute("rel", "noopener noreferrer");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(issuesLink).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator(".dialog-heading").getByRole("button", { name: "取消" })).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(issuesLink).toBeFocused();
+    await expect(page.locator(".feedback-dialog textarea")).toHaveCount(0);
     await page.locator(".dialog-actions").getByRole("button", { name: "取消" }).click();
     await page.getByRole("button", { name: "返回书架" }).click();
 
