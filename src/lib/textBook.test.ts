@@ -17,12 +17,13 @@ describe("safe text chapter documents", () => {
     expect(html).toContain(`data-source-end="${source.indexOf("\n\n")}"`);
   });
 
-  it("preserves CRLF characters instead of letting the HTML parser normalize them", () => {
+  it("renders CRLF-separated lines as paragraphs with exact source ranges", () => {
     const source = "第一行\r\n第二行\r\n\r\n第三行";
     const model = buildTextSourceModel(source);
     const html = buildChapterHtml(model, model.chapters[0]!);
     expect(html).not.toContain("\r");
-    expect(html).toContain("第一行&#13;\n第二行");
+    expect(html.match(/<p /g)).toHaveLength(3);
+    expect(html).toContain('data-source-start="5" data-source-end="8">第二行</span>');
   });
 
   it("groups continuation fragments inside one paragraph element", () => {

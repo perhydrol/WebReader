@@ -8,6 +8,20 @@ const emptyFixture = path.join(import.meta.dirname, "fixtures", "empty-reader.tx
 const invalidEpubFixture = path.join(import.meta.dirname, "fixtures", "invalid.epub");
 const readerName = "synthetic reader";
 
+test("renders single newlines as paragraphs with wider scroll text on desktop and mobile", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(textPayload("第一段\r\n第二段\n第三段"));
+  await page.getByRole("button", { name: `打开《${readerName}》` }).click();
+  await changeReaderMode(page, "滚动");
+  const paragraphs = page.locator(".text-scroll-item p");
+  await expect(paragraphs).toHaveText(["第一段", "第二段", "第三段"]);
+  await expect(paragraphs.nth(1)).toHaveAttribute("data-fragment-start", "5");
+  await expect(page.locator(".text-scroll-item").first()).toHaveCSS("padding-left", "64px");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".text-scroll-item").first()).toHaveCSS("padding-left", "36px");
+  await expect(paragraphs).toHaveText(["第一段", "第二段", "第三段"]);
+});
+
 function progressOffset(read: () => Promise<string | null>) {
   return read().then((value) => (value === null ? Number.NaN : Number(value)));
 }

@@ -17,6 +17,17 @@ function fragmentText(model: TextSourceModel, index: number): string {
 }
 
 describe("text paragraphs", () => {
+  it.each(["\n", "\r\n", "\r"])("starts a paragraph at every %j line ending without blank lines", (newline) => {
+    const source = `  第一段  ${newline}第二段${newline} ${newline}第三段${newline}`;
+    const model = buildTextSourceModel(source);
+    expect(model.paragraphs.map(({ start, end }) => source.slice(start, end)))
+      .toEqual(["  第一段", "第二段", "第三段"]);
+    expect(model.paragraphs[1]!.start).toBe(source.indexOf("第二段"));
+    expect(visibleOverlaps(model, 0, source.length)).toEqual(
+      model.paragraphs.map(({ start, end }) => ({ start, end })),
+    );
+  });
+
   it("splits paragraphs while retaining exact source offsets", () => {
     const model = buildTextSourceModel("First paragraph.\n\nSecond paragraph.");
     expect(model.paragraphs).toEqual([
@@ -51,7 +62,8 @@ describe("text paragraphs", () => {
     const source = "```\ncode\n\n# heading\n\n<script>alert(1)</script>";
     const model = buildTextSourceModel(source);
     expect(model.paragraphs.map(({ start, end }) => source.slice(start, end))).toEqual([
-      "```\ncode",
+      "```",
+      "code",
       "# heading",
       "<script>alert(1)</script>",
     ]);
@@ -107,7 +119,8 @@ describe("bounded display fragments", () => {
     const source = `${"a".repeat(3999)}\r\n${"b".repeat(20)}`;
     const model = buildTextSourceModel(source);
     expect(fragmentText(model, 0)).toBe("a".repeat(3999));
-    expect(fragmentText(model, 1).startsWith("\r\n")).toBe(true);
+    expect(fragmentText(model, 1)).toBe("b".repeat(20));
+    expect(model.fragments[1]!.start).toBe(4001);
   });
 
   it("does not drop or duplicate source text across fragments", () => {

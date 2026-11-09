@@ -447,7 +447,7 @@ test("keeps the scroll target across font, spacing, indentation, and width setti
   expect(style.fontFamily).toContain("Georgia");
   expect(style.lineHeight / style.fontSize).toBeCloseTo(1.9, 1);
   expect(style.textIndent / style.fontSize).toBeCloseTo(2, 1);
-  expect(style.width).toBeCloseTo(880, 0);
+  expect(style.width).toBeCloseTo(916, 0);
 });
 
 test("keeps the paged target visible across outline, viewport, and font changes", async ({ page }) => {

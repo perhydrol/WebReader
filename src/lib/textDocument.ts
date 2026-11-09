@@ -72,8 +72,6 @@ function isLowSurrogate(code: number): boolean {
 
 export function splitTextParagraphs(text: string): TextParagraph[] {
   const paragraphs: TextParagraph[] = [];
-  let blockStart = -1;
-  let blockEnd = 0;
 
   const pushParagraph = (start: number, end: number) => {
     if (start < 0) return;
@@ -91,15 +89,7 @@ export function splitTextParagraphs(text: string): TextParagraph[] {
       contentEnd += 1;
     }
 
-    if (isBlank(text, lineStart, contentEnd)) {
-      if (blockStart >= 0) {
-        pushParagraph(blockStart, lineStart);
-        blockStart = -1;
-      }
-    } else {
-      if (blockStart < 0) blockStart = lineStart;
-      blockEnd = contentEnd;
-    }
+    if (!isBlank(text, lineStart, contentEnd)) pushParagraph(lineStart, contentEnd);
 
     if (contentEnd >= text.length) break;
     if (text.charCodeAt(contentEnd) === 0x0d) {
@@ -111,7 +101,6 @@ export function splitTextParagraphs(text: string): TextParagraph[] {
     lineStart = contentEnd;
   }
 
-  pushParagraph(blockStart, blockEnd);
   return paragraphs;
 }
 

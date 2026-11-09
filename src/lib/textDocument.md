@@ -5,7 +5,7 @@
 ## Contracts
 
 - Offsets are UTF-16 code units in the source after a leading BOM is removed. They are not bytes, code points, page numbers, or fragment indexes.
-- Paragraph ranges come from one line scan. Blank lines separate paragraphs; a paragraph's trailing whitespace is trimmed but its leading whitespace is preserved. Paragraph ranges are allowed to have gaps, and whitespace-only gaps are never rendered as paragraphs.
+- Paragraph ranges come from one line scan. Every LF, CRLF, or CR starts a new paragraph without requiring a blank line; a paragraph's trailing whitespace is trimmed but its leading whitespace is preserved. Paragraph ranges are allowed to have gaps, and whitespace-only gaps are never rendered as paragraphs.
 - Display fragments are at most 4000 source units. A split prefers the last whitespace before the limit, then avoids splitting a surrogate pair or a CRLF pair. Fragments keep exact source ranges and `continuesPrevious`/`continuesNext`; they never trim source text.
 - Chapters pack fragments until the chapter's source span would exceed 48×1024 units. A single huge paragraph therefore crosses chapters. Chapter IDs and fragment IDs are derived from stable source ranges.
 - `clampToVisibleOffset` maps a position inside an inter-paragraph gap to the next visible character. Positions after the last visible character clamp to its end; an empty document clamps to 0.
