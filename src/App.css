@@ -516,3 +516,9 @@ h2 { margin: 0; font-size: 20px; }
 @media (width < 480px) {
   .feedback-dialog .dialog-actions { grid-template-columns: minmax(0, 1fr); }
 }
+
+.reader-sheet > .reader-title { flex-shrink: 0; padding: 16px 32px 12px; line-height: 1.5; }
+.reader-sheet .outline-panel { flex: 1; height: auto; }
+.reader-sheet .outline-link { height: auto; justify-content: flex-start; text-align: left; white-space: normal; color: inherit; }
+.reader-sheet .outline-link.current { color: var(--green-dark); background: #e5e5ea; font-weight: 700; }
+.theme-night .reader-sheet .outline-link.current { color: #b6e1d3; background: #3a3a3c; }

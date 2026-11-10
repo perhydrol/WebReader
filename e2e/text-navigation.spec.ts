@@ -564,3 +564,33 @@ test("bounds paged chapter URLs and releases them on close", async ({ page }) =>
     await expect(page.locator("foliate-paginator")).toHaveCount(0);
   }
 });
+
+
+test("centers the sheet title and reveals the current chapter from its body on every opening", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openReader(page, chapterText(100, 12));
+  for (const mode of ["滚动", "翻页"]) {
+    await changeReaderMode(page, mode);
+    await waitViewReady(page, mode === "滚动" ? "article" : "book");
+    await searchAndOpen(page, "第 81-8 段");
+    for (let opening = 0; opening < 2; opening += 1) {
+      await showReaderToolbar(page);
+      await page.getByRole("button", { name: "目录", exact: true }).click();
+      const current = page.locator('.outline-link[aria-current="location"]');
+      await expect(current).toHaveCount(1);
+      await expect(current).toHaveText("第 81 章 合成章节");
+      await expect(current).toHaveClass(/current/);
+      await expect.poll(() => page.locator(".outline-nav").evaluate((element) => {
+        const item = element.querySelector('[aria-current="location"]')!.getBoundingClientRect();
+        const nav = element.getBoundingClientRect();
+        return item.top >= nav.top && item.bottom <= nav.bottom && element.scrollTop > 0;
+      })).toBe(true);
+      const title = await page.locator(".reader-sheet > .reader-title").boundingBox();
+      const sheet = await page.locator(".reader-sheet").boundingBox();
+      expect(Math.abs(title!.x + title!.width / 2 - sheet!.x - sheet!.width / 2)).toBeLessThan(1);
+      const titleText = await page.locator(".reader-title strong").boundingBox();
+      expect(titleText!.y - sheet!.y).toBeGreaterThanOrEqual(12);
+      await page.getByRole("button", { name: "关闭目录" }).click();
+    }
+  }
+});

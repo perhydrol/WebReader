@@ -1,6 +1,7 @@
 import { Button, List } from "konsta/react";
 import { ChevronDown, ChevronRight, ListTree, X } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { currentOutlineItem } from "../lib/readerOutline";
 import type { TranslationKey, TranslationVariables } from "../lib/i18n";
 import type { ReaderOutlineItem } from "../types/reader";
 
@@ -13,7 +14,7 @@ interface ReaderOutlineProps {
   t: (key: TranslationKey, variables?: TranslationVariables) => string;
 }
 
-function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutlineProps, "items" | "currentTarget" | "onNavigate" | "t">) {
+function OutlineBranch({ items, currentId, onNavigate, t }: Pick<ReaderOutlineProps, "items" | "onNavigate" | "t"> & { currentId?: string }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const toggle = (id: string) => {
     setCollapsed((current) => {
@@ -29,7 +30,7 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
       {items.map((item) => {
         const hasChildren = item.children.length > 0;
         const isCollapsed = collapsed.has(item.id);
-        const current = Boolean(item.target && item.target === currentTarget);
+        const current = item.id === currentId;
         return (
           <li key={item.id}>
             <div className="outline-row">
@@ -55,7 +56,7 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
               </Button>
             </div>
             {hasChildren && !isCollapsed && (
-              <OutlineBranch items={item.children} currentTarget={currentTarget} onNavigate={onNavigate} t={t} />
+              <OutlineBranch items={item.children} currentId={currentId} onNavigate={onNavigate} t={t} />
             )}
           </li>
         );
@@ -65,6 +66,23 @@ function OutlineBranch({ items, currentTarget, onNavigate, t }: Pick<ReaderOutli
 }
 
 export function ReaderOutline({ items, currentTarget, automatic, onNavigate, onClose, t }: ReaderOutlineProps) {
+  const navRef = useRef<HTMLElement>(null);
+  const currentId = useMemo(() => currentOutlineItem(items, currentTarget)?.id, [items, currentTarget]);
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav || !currentId) return;
+    const centerCurrent = () => {
+      const current = nav.querySelector<HTMLElement>('[aria-current="location"]');
+      if (!current) return;
+      const item = current.getBoundingClientRect();
+      const viewport = nav.getBoundingClientRect();
+      nav.scrollTop += item.top - viewport.top - (nav.clientHeight - item.height) / 2;
+    };
+    const frame = requestAnimationFrame(centerCurrent);
+    const observer = new ResizeObserver(centerCurrent);
+    observer.observe(nav);
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+  }, [currentId, items]);
 
   return (
     <aside className="reader-panel outline-panel" aria-label={t("tableOfContents")}>
@@ -73,9 +91,9 @@ export function ReaderOutline({ items, currentTarget, automatic, onNavigate, onC
         <Button clear className="icon-button" type="button" onClick={onClose} aria-label={t("closeTableOfContents")}><X /></Button>
       </header>
       {automatic && items.length > 0 && <p className="panel-note">{t("automaticOutline")}</p>}
-      <nav className="outline-nav">
+      <nav ref={navRef} className="outline-nav">
         {items.length > 0
-          ? <OutlineBranch items={items} currentTarget={currentTarget} onNavigate={onNavigate} t={t} />
+          ? <OutlineBranch items={items} currentId={currentId} onNavigate={onNavigate} t={t} />
           : <p className="empty-panel">{t("noTableOfContents")}</p>}
       </nav>
     </aside>
