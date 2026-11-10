@@ -9,3 +9,5 @@ Narrow-screen assertions cover header-before-mode order, bounded mode controls, 
 Checks icon-only back navigation, default transparent segmented button surfaces, pane-confined blur and the 12px gap above the safe bottom.
 
 The unified upload acceptance opens the native file chooser and imports a synthetic TXT, then drops a second synthetic file into the same area. The old title action must be absent.
+
+Feedback action bounds are checked in Chinese and English at 320px, 390px and desktop widths, including text containment, minimum touch height and narrow-screen stacking.

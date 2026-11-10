@@ -170,3 +170,43 @@ test("reveals chrome from real paged content without changing its source or view
   await page.keyboard.press("Enter");
   await expect(page.getByRole("button", { name: "返回书架" })).toBeVisible();
 });
+
+
+test("keeps feedback actions and their labels inside the dialog across languages and widths", async ({ page }) => {
+  for (const language of ["zh", "en"]) {
+    for (const width of [320, 390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      await page.evaluate((value) => localStorage.setItem("webreader.language", value), language);
+      await page.reload();
+      await page.getByRole("button", { name: language === "zh" ? "反馈" : "Feedback", exact: true }).click();
+      const dialog = page.locator(".feedback-dialog");
+      const actions = dialog.locator(".dialog-actions");
+      const link = actions.getByRole("link");
+      await expect(link).toHaveAttribute("href", "https://github.com/perhydrol/WebReader/issues");
+      for (const action of [actions.getByRole("button"), link]) {
+        const bounds = await action.evaluate((element) => {
+          const box = element.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          const text = range.getBoundingClientRect();
+          const parent = element.closest(".dialog-actions")!.getBoundingClientRect();
+          return { x: box.x, right: box.right, y: box.y, bottom: box.bottom, height: box.height,
+            textX: text.x, textRight: text.right, textY: text.y, textBottom: text.bottom,
+            parentX: parent.x, parentRight: parent.right };
+        });
+        expect(bounds.height).toBeGreaterThanOrEqual(44);
+        expect(bounds.x).toBeGreaterThanOrEqual(bounds.parentX - 1);
+        expect(bounds.right).toBeLessThanOrEqual(bounds.parentRight + 1);
+        expect(bounds.textX).toBeGreaterThanOrEqual(bounds.x - 1);
+        expect(bounds.textRight).toBeLessThanOrEqual(bounds.right + 1);
+        expect(bounds.textY).toBeGreaterThanOrEqual(bounds.y - 1);
+        expect(bounds.textBottom).toBeLessThanOrEqual(bounds.bottom + 1);
+      }
+      const cancelBox = await actions.getByRole("button").boundingBox();
+      const linkBox = await link.boundingBox();
+      if (width < 480) expect(linkBox!.y).toBeGreaterThanOrEqual(cancelBox!.y + cancelBox!.height);
+      await page.keyboard.press("Escape");
+    }
+  }
+});

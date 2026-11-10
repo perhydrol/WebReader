@@ -124,7 +124,7 @@ function FeedbackDialog({ language, onClose }: {
       <p>{t("feedbackHint")}</p>
       <div className="dialog-actions">
         <ShelfButton className="secondary-button" type="button" onClick={onClose}>{t("cancel")}</ShelfButton>
-        <a className="primary-button" href="https://github.com/perhydrol/WebReader/issues" target="_blank" rel="noopener noreferrer">{t("feedbackOpenIssues")}</a>
+        <ShelfButton className="feedback-issues-link" href="https://github.com/perhydrol/WebReader/issues" role="link" target="_blank" rel="noopener noreferrer">{t("feedbackOpenIssues")}</ShelfButton>
       </div>
     </ModalFrame>
   );

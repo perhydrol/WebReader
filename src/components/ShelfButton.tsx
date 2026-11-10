@@ -1,8 +1,10 @@
 import { Button } from "konsta/react";
-import type { ComponentProps } from "react";
+import type { AnchorHTMLAttributes, ComponentProps } from "react";
+
+type ShelfButtonProps = ComponentProps<typeof Button> & Pick<AnchorHTMLAttributes<HTMLAnchorElement>, "target" | "rel">;
 
 /** Neutral shelf actions use Konsta's public color and shape props. */
-export function ShelfButton({ className = "", colors, clear, ...props }: ComponentProps<typeof Button>) {
+export function ShelfButton({ className = "", colors, clear, ...props }: ShelfButtonProps) {
   return <Button rounded clear={clear} {...props} colors={{
     textIos: "text-black dark:text-white",
     fillTextIos: "text-black dark:text-white",

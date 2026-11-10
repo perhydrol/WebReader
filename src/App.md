@@ -23,3 +23,5 @@ Reading settings receive stored preferences so edits to other fields cannot pers
 App synchronizes the root canvas, CSS color-scheme and both browser theme-color meta tags with the current shelf or reading background. Layout effect updates before paint, depends only on resolved appearance and restores previous document values on cleanup. This changes the page behind system UI; it does not hide iOS status icons.
 
 Feedback opens a guidance dialog with an explicit external GitHub Issues link. It collects no text, attaches no local data, and uses a new page with noopener/noreferrer.
+
+Feedback actions share ShelfButton presentation while the external action retains link semantics. Equal grid columns prevent intrinsic button widths from squeezing the link; narrow viewports stack actions and labels determine height above a 44px minimum.
